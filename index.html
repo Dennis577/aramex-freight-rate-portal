@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="description" content="Aramex Freight Rate Portal — Search air and ocean freight rates.">
+  <title>Freight Rate Portal | Aramex</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/query.css">
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%238B0000'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='18' font-family='Arial'>F</text></svg>">
+</head>
+<body class="query-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="logo">
+      <div class="logo-icon">✈</div>
+      <span>Freight Rate Portal</span>
+    </div>
+    <div class="header-right">
+      <span id="lastUpdated" class="last-updated" style="font-size:11px;opacity:.7;"></span>
+    </div>
+  </header>
+
+  <!-- ── Tab Navigation ─────────────────────────────────────────── -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="air">
+      ✈&nbsp; Air Freight
+    </button>
+    <button class="tab-btn" data-tab="ocean">
+      🚢&nbsp; Ocean Freight
+    </button>
+  </nav>
+
+  <!-- ── Search / Filter Panel ──────────────────────────────────── -->
+  <section class="search-panel">
+    <div class="container">
+      <div class="panel-title">Search Rates</div>
+
+      <!-- Error banner (hidden by default) -->
+      <div id="errorBanner" class="alert alert-error hidden" style="margin-bottom:12px;"></div>
+
+      <!-- Filter Grid -->
+      <div class="search-grid">
+        <!-- Origin -->
+        <div class="form-group">
+          <label class="form-label" for="filterOrigin">Origin</label>
+          <input class="form-control" id="filterOrigin" type="text"
+                 placeholder="e.g. SHA, PEK"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </div>
+
+        <!-- Destination -->
+        <div class="form-group">
+          <label class="form-label" for="filterDest">Destination</label>
+          <input class="form-control" id="filterDest" type="text"
+                 placeholder="e.g. LAX, FRA"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </div>
+
+        <!-- Carrier -->
+        <div class="form-group">
+          <label class="form-label" for="filterCarrier">Carrier</label>
+          <input class="form-control" id="filterCarrier" type="text"
+                 placeholder="e.g. CX, COSCO"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </div>
+
+        <!-- Valid As Of Date -->
+        <div class="form-group">
+          <label class="form-label" for="filterDate">Valid As Of</label>
+          <input class="form-control" id="filterDate" type="date">
+        </div>
+
+        <!-- Search / Clear buttons -->
+        <div class="form-group" style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="btnClearFilters" class="btn btn-ghost btn-sm" type="button">
+            ✕ Clear
+          </button>
+          <span class="text-muted text-xs" style="align-self:center;margin-left:4px;">
+            Results update automatically as you type
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Results Section ────────────────────────────────────────── -->
+  <main style="flex:1">
+    <div class="container" style="padding-top:16px;">
+
+      <!-- Loading State -->
+      <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Loading rates…</span>
+      </div>
+
+      <!-- Results (hidden while loading) -->
+      <section id="resultsSection" class="results-section" style="padding:0;">
+        <div class="results-header">
+          <span id="resultsCount" class="results-count"></span>
+        </div>
+
+        <!-- MOBILE: Card View -->
+        <div id="rateCards" class="cards-view"></div>
+
+        <!-- DESKTOP: Table View -->
+        <div class="table-wrap">
+          <table class="rate-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Carrier</th>
+                <th>Commodity</th>
+                <th>Rate</th>
+                <th>Min Charge</th>
+                <th>Valid From</th>
+                <th>Valid To</th>
+              </tr>
+            </thead>
+            <tbody id="rateTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ── Disclaimer ────────────────────────────────────────────── -->
+  <div class="container">
+    <div class="disclaimer">
+      <strong>DISCLAIMER:</strong> Rates shown are indicative and subject to change without notice.
+      All rates are quoted before surcharges, fuel adjustments, and taxes unless otherwise stated.
+      Please contact your Aramex representative to confirm rates before booking.
+    </div>
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    &copy; <span id="footerYear"></span> Aramex &nbsp;|&nbsp; Freight Rate Portal
+  </footer>
+
+  <!-- Scripts (order matters) -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/query.js"></script>
+  <script>
+    document.getElementById('footerYear').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>

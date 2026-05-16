@@ -1,0 +1,24 @@
+# Netlify Build Configuration
+# ─────────────────────────────────────────────────────────
+# This file tells Netlify how to build and deploy the site.
+# The build command injects secrets from environment variables.
+#
+# Required Netlify Environment Variables (set in Netlify UI):
+#   JSONBIN_BIN_ID        — Your JSONbin Bin ID
+#   JSONBIN_READ_KEY      — JSONbin read/master key (public read)
+#   JSONBIN_WRITE_KEY     — JSONbin master key (admin write)
+#   ADMIN_PASSWORD_HASH   — SHA-256 hex of admin password
+# ─────────────────────────────────────────────────────────
+
+[build]
+  command   = "sh scripts/inject-env.sh"
+  publish   = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Redirect all requests to the same directory (SPA-like)
+[[redirects]]
+  from   = "/*"
+  to     = "/:splat"
+  status = 200
