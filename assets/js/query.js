@@ -235,22 +235,17 @@ const QueryApp = (() => {
 
     const isAir = r.type === 'air';
     const origCurrency = r.currency || 'CNY';
-    const displayCurrency = _displayCurrency;
 
-    // Price display
+    // Price display — show primary tier
     let priceHtml = '—';
     if (isAir) {
-      // Show primary tier + density
       const primaryTier = r.rateNeg45 ?? r.rateMin ?? r.ratePos45;
       const displayPrice = _applyDisplay(primaryTier);
-      const primaryLabel = r.rateNeg45 ? '+45kg' : (r.rateMin ? 'Min' : '+45kg');
-      const densityHtml  = r.densityRatio
-        ? `<span class="density-tag">${r.densityRatio}</span>`
-        : '';
+      const primaryLabel = r.rateNeg45 ? '≤45kg' : (r.rateMin ? 'Min' : '≤45kg');
       priceHtml = `
         <div class="card-price-primary">${_fmtVal(displayPrice)} <span class="card-price-unit">/kg</span></div>
         <div class="card-price-meta">
-          <span class="tier-label">${primaryLabel}</span> ${densityHtml}
+          <span class="tier-label">${primaryLabel}</span>
         </div>`;
     } else {
       const displayPrice = _applyDisplay(parseFloat(r.rate));
@@ -302,11 +297,6 @@ const QueryApp = (() => {
             <span class="rate-field-label">Rate</span>
             <span class="rate-field-value price">${priceHtml}</span>
           </div>
-          ${isAir && r.densityRatio ? `
-          <div class="rate-field">
-            <span class="rate-field-label">Density</span>
-            <span class="rate-field-value">${r.densityRatio}</span>
-          </div>` : ''}
           <div class="rate-field">
             <span class="rate-field-label">Commodity</span>
             <span class="rate-field-value">${Utils.esc(r.commodity || 'General')}</span>
@@ -335,7 +325,7 @@ const QueryApp = (() => {
 
     if (!rates.length) {
       tbody.innerHTML = `
-        <tr><td colspan="11" style="text-align:center;padding:32px;color:var(--color-text-muted)">
+        <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--color-text-muted)">
           No rates found
         </td></tr>`;
       return;
@@ -344,35 +334,26 @@ const QueryApp = (() => {
     const isAir = _activeTab === 'air';
 
     tbody.innerHTML = rates.map(r => {
-      const expiring = Utils.expiringSoon(r, 7);
       const days     = Utils.daysUntilExpiry(r);
       const badge    = isAir
         ? `<span class="badge badge-air">Air</span>`
         : `<span class="badge badge-ocean">Ocean</span>`;
 
-      // Density
-      const densityHtml = r.densityRatio
-        ? `<span class="density-tag-sm">${r.densityRatio}</span>`
-        : '—';
-
-      // Tiers — ALWAYS show all 7 tier cells for air freight
-      let tiersHtml = '—';
+      // Tiers — one cell per weight label for air freight
+      let tiersHtml = '';
       if (isAir) {
-        const tierKeys    = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
-        const tierLabels  = ['Min','−45','+45','+100','+300','+500','+1000'];
+        const tierKeys   = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
+        const tierLabels = ['min','neg45','pos45','pos100','pos300','pos500','pos1000'];
         tiersHtml = tierKeys.map((k, i) => {
           const val = parseFloat(r[k]);
-          return `<span class="tier-cell" title="${tierLabels[i]}">${_fmtVal(val) || '—'}</span>`;
+          return `<td class="td-tier-cell" style="text-align:center">${_fmtVal(val) || '—'}</td>`;
         }).join('');
       } else {
+        // Ocean: single rate cell + 6 empty cells for alignment
         const v = parseFloat(r.rate);
-        tiersHtml = isNaN(v) ? '—' : _fmtVal(v);
+        tiersHtml = `<td class="td-tier-cell" style="text-align:center">${isNaN(v) ? '—' : _fmtVal(v)}</td>`
+          + '<td></td>'.repeat(6);
       }
-
-      // Primary rate (for sort)
-      const primaryVal = isAir
-        ? (r.rateNeg45 ?? r.rateMin ?? r.ratePos45)
-        : parseFloat(r.rate);
 
       return `
         <tr>
@@ -381,9 +362,7 @@ const QueryApp = (() => {
           <td><strong>${Utils.esc(r.destination)}</strong></td>
           <td>${Utils.esc(r.carrier || '—')}</td>
           <td>${Utils.esc(r.commodity || 'General')}</td>
-          <td>${densityHtml}</td>
-          <td class="td-tiers">${tiersHtml}</td>
-          <td class="td-price">${_fmtVal(_applyDisplay(primaryVal))}</td>
+          ${tiersHtml}
           <td>${r.minCharge != null ? _fmtVal(_applyDisplay(parseFloat(r.minCharge))) : '—'}</td>
           <td style="color:${days !== null && days < 0 ? 'var(--color-error)' : expiring ? 'var(--color-warning)' : 'inherit'};font-weight:${expiring ? '700':'400'}">
             ${Utils.fmtDate(r.validTo)}

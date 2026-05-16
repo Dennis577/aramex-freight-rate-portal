@@ -397,21 +397,12 @@
   font-weight: 700;
 }
 
-/* Table: tiers cell */
-.td-tiers {
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
-}
-
-.tier-cell {
-  display: inline-block;
-  margin: 1px 2px;
-  padding: 1px 4px;
-  background: #fff0f0;
+/* Table: individual tier cells */
+.td-tier-cell {
   color: var(--color-primary);
-  border-radius: 3px;
-  font-weight: 600;
-  font-size: 11px;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
 }
 
 /* Table: density column */
