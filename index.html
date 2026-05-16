@@ -76,13 +76,25 @@
           <input class="form-control" id="filterDate" type="date">
         </div>
 
+        <!-- Currency Toggle -->
+        <div class="form-group">
+          <label class="form-label" for="filterCurrency">Display Currency</label>
+          <select class="form-control" id="filterCurrency">
+            <option value="CNY">CNY (¥)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </div>
+
         <!-- Search / Clear buttons -->
-        <div class="form-group" style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap;">
+        <div class="form-group" style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <button id="btnClearFilters" class="btn btn-ghost btn-sm" type="button">
             ✕ Clear
           </button>
           <span class="text-muted text-xs" style="align-self:center;margin-left:4px;">
             Results update automatically as you type
+          </span>
+          <span class="rate-settings-badge" id="rateSettingsBadge" style="display:none;">
+            <span id="markupBadge" style="display:none;"></span>
           </span>
         </div>
       </div>
@@ -118,6 +130,8 @@
                 <th>Destination</th>
                 <th>Carrier</th>
                 <th>Commodity</th>
+                <th>Density</th>
+                <th>Price Tiers</th>
                 <th>Rate</th>
                 <th>Min Charge</th>
                 <th>Valid From</th>

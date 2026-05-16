@@ -9,15 +9,18 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/admin.css">
 
-  <!-- SheetJS for Excel/CSV import (CDN, loaded ahead) -->
+  <!-- SheetJS for Excel/CSV import (CDN) -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Tesseract.js for OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%235a0000'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='14' font-family='Arial'>ADM</text></svg>">
 </head>
 <body class="admin-page">
 
 <!-- ══════════════════════════════════════════════════════════
-     LOGIN VIEW  (shown when not authenticated)
+     LOGIN VIEW
 ═══════════════════════════════════════════════════════════════ -->
 <div id="loginView" class="login-page hidden">
   <div class="login-card">
@@ -43,7 +46,7 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     ADMIN DASHBOARD VIEW  (shown when authenticated)
+     ADMIN DASHBOARD VIEW
 ═══════════════════════════════════════════════════════════════ -->
 <div id="adminView" class="hidden">
 
@@ -67,81 +70,176 @@
   <!-- Loading overlay -->
   <div id="adminLoading" class="loading-overlay" style="padding:60px">
     <div class="spinner"></div>
-    <span>Loading rates…</span>
+    <span>Loading…</span>
   </div>
 
-  <!-- Main dashboard -->
+  <!-- Main dashboard (hidden until authenticated) -->
   <div id="adminTableWrap" class="hidden">
     <div class="admin-content">
 
-      <!-- Stats Row -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-value" id="statTotal">—</div>
-          <div class="stat-label">Total Rates</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statActive">—</div>
-          <div class="stat-label">Active Today</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statAir">—</div>
-          <div class="stat-label">Air Rates</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statOcean">—</div>
-          <div class="stat-label">Ocean Rates</div>
-        </div>
+      <!-- Tab Navigation -->
+      <div class="admin-tabs" style="margin-bottom:16px;">
+        <button class="admin-tab active" data-admin-tab="rates">📋 Rates</button>
+        <button class="admin-tab" data-admin-tab="settings">⚙ Settings</button>
+        <button class="admin-tab" data-admin-tab="logs">📜 Logs</button>
       </div>
 
-      <!-- Toolbar -->
-      <div class="admin-toolbar">
-        <!-- Tab Filter -->
-        <div class="toolbar-left">
-          <button class="btn btn-ghost btn-sm admin-tab-btn active" data-tab="all">All</button>
-          <button class="btn btn-ghost btn-sm admin-tab-btn" data-tab="air">✈ Air</button>
-          <button class="btn btn-ghost btn-sm admin-tab-btn" data-tab="ocean">🚢 Ocean</button>
+      <!-- ══ RATES TAB ══════════════════════════════════════════ -->
+      <div id="tabRates" class="admin-tab-content">
 
-          <!-- Search -->
-          <input class="form-control admin-search" id="adminSearch"
-                 type="text" placeholder="Search origin, destination, carrier…">
+        <!-- Stats Row -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotal">—</div>
+            <div class="stat-label">Total Rates</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statActive">—</div>
+            <div class="stat-label">Active Today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statAir">—</div>
+            <div class="stat-label">Air Rates</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statOcean">—</div>
+            <div class="stat-label">Ocean Rates</div>
+          </div>
         </div>
 
-        <div class="toolbar-right">
-          <button id="btnReload" class="btn btn-ghost btn-sm" title="Reload from cloud">↺</button>
-          <button id="btnAddRate" class="btn btn-primary btn-sm">+ Add Rate</button>
-          <button id="btnImport" class="btn btn-outline btn-sm">⬆ Import Excel</button>
-          <button id="btnExportCSV" class="btn btn-ghost btn-sm">⬇ CSV</button>
-          <button id="btnExportJSON" class="btn btn-ghost btn-sm">⬇ JSON</button>
-          <button id="btnDeleteSelected" class="btn btn-danger btn-sm">🗑 Delete</button>
+        <!-- Toolbar -->
+        <div class="admin-toolbar">
+          <div class="toolbar-left">
+            <button class="btn btn-ghost btn-sm admin-tab-btn active" data-tab="all">All</button>
+            <button class="btn btn-ghost btn-sm admin-tab-btn" data-tab="air">✈ Air</button>
+            <button class="btn btn-ghost btn-sm admin-tab-btn" data-tab="ocean">🚢 Ocean</button>
+            <input class="form-control admin-search" id="adminSearch"
+                   type="text" placeholder="Search origin, destination, carrier…">
+          </div>
+          <div class="toolbar-right">
+            <button id="btnReload" class="btn btn-ghost btn-sm" title="Reload from cloud">↺</button>
+            <button id="btnAddRate" class="btn btn-primary btn-sm">+ Add Rate</button>
+            <button id="btnImport" class="btn btn-outline btn-sm">⬆ Import</button>
+            <button id="btnAiScan" class="btn btn-outline btn-sm">🤖 AI Scan</button>
+            <button id="btnExportCSV" class="btn btn-ghost btn-sm">⬇ CSV</button>
+            <button id="btnExportJSON" class="btn btn-ghost btn-sm">⬇ JSON</button>
+            <button id="btnDeleteSelected" class="btn btn-danger btn-sm">🗑 Delete</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Table -->
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th class="td-check"><input type="checkbox" id="chkAll" title="Select all"></th>
-              <th data-sort="type">Type <span class="sort-icon">⇅</span></th>
-              <th data-sort="origin">Origin <span class="sort-icon">⇅</span></th>
-              <th data-sort="destination">Destination <span class="sort-icon">⇅</span></th>
-              <th data-sort="carrier">Carrier <span class="sort-icon">⇅</span></th>
-              <th data-sort="commodity">Commodity <span class="sort-icon">⇅</span></th>
-              <th data-sort="rate">Rate <span class="sort-icon">⇅</span></th>
-              <th data-sort="validFrom">Valid From <span class="sort-icon">⇅</span></th>
-              <th data-sort="validTo">Valid To <span class="sort-icon">⇅</span></th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="adminTableBody"></tbody>
-        </table>
-        <div class="paginator">
-          <span class="page-info" id="pageInfo"></span>
-          <button id="btnPrevPage" class="btn btn-ghost btn-sm">‹ Prev</button>
-          <button id="btnNextPage" class="btn btn-ghost btn-sm">Next ›</button>
+        <!-- Table -->
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th class="td-check"><input type="checkbox" id="chkAll" title="Select all"></th>
+                <th data-sort="type">Type <span class="sort-icon">⇅</span></th>
+                <th data-sort="origin">Origin <span class="sort-icon">⇅</span></th>
+                <th data-sort="destination">Destination <span class="sort-icon">⇅</span></th>
+                <th data-sort="carrier">Carrier <span class="sort-icon">⇅</span></th>
+                <th data-sort="commodity">Commodity <span class="sort-icon">⇅</span></th>
+                <th>Density</th>
+                <th>Price Tiers</th>
+                <th data-sort="rate">Rate <span class="sort-icon">⇅</span></th>
+                <th data-sort="validFrom">Valid From <span class="sort-icon">⇅</span></th>
+                <th data-sort="validTo">Valid To <span class="sort-icon">⇅</span></th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody"></tbody>
+          </table>
+          <div class="paginator">
+            <span class="page-info" id="pageInfo"></span>
+            <button id="btnPrevPage" class="btn btn-ghost btn-sm">‹ Prev</button>
+            <button id="btnNextPage" class="btn btn-ghost btn-sm">Next ›</button>
+          </div>
         </div>
-      </div>
+      </div><!-- /tabRates -->
+
+      <!-- ══ SETTINGS TAB ═══════════════════════════════════════ -->
+      <div id="tabSettings" class="admin-tab-content hidden">
+        <div class="settings-card">
+          <div class="settings-card-header">⚙ Global Settings</div>
+          <div class="settings-card-body">
+
+            <!-- Exchange Rate -->
+            <div class="settings-row">
+              <div class="settings-row-info">
+                <div class="settings-row-label">USD Exchange Rate</div>
+                <div class="settings-row-desc">Used to convert CNY prices to USD for display</div>
+              </div>
+              <div class="settings-row-control">
+                <input class="form-control" id="sExchangeRate" type="number"
+                       min="0.1" step="0.01" placeholder="7.0" style="width:120px;">
+                <button id="btnSaveExchangeRate" class="btn btn-primary btn-sm">Save Rate</button>
+              </div>
+              <div class="settings-row-feedback" id="feedbackExchange"></div>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <!-- Markup Percent -->
+            <div class="settings-row">
+              <div class="settings-row-info">
+                <div class="settings-row-label">Markup Percentage</div>
+                <div class="settings-row-desc">Applied to all displayed prices (0 = no markup, 10 = +10%)</div>
+              </div>
+              <div class="settings-row-control">
+                <input class="form-control" id="sMarkupPercent" type="number"
+                       min="0" max="100" step="0.1" placeholder="0" style="width:120px;">
+                <span style="font-weight:600;color:var(--color-text-secondary);padding:0 8px;">%</span>
+                <button id="btnSaveMarkup" class="btn btn-primary btn-sm">Save Markup</button>
+              </div>
+              <div class="settings-row-feedback" id="feedbackMarkup"></div>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <!-- Current values summary -->
+            <div class="settings-summary">
+              <div class="settings-summary-item">
+                <span class="settings-summary-label">Current Exchange Rate</span>
+                <span class="settings-summary-value" id="curExchangeRate">—</span>
+              </div>
+              <div class="settings-summary-item">
+                <span class="settings-summary-label">Current Markup</span>
+                <span class="settings-summary-value" id="curMarkup">—</span>
+              </div>
+              <div class="settings-summary-item">
+                <span class="settings-summary-label">Last Updated</span>
+                <span class="settings-summary-value" id="curSettingsUpdated">—</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div><!-- /tabSettings -->
+
+      <!-- ══ LOGS TAB ═══════════════════════════════════════════ -->
+      <div id="tabLogs" class="admin-tab-content hidden">
+        <div class="logs-header">
+          <span class="logs-title">📜 Change History</span>
+          <button id="btnReloadLogs" class="btn btn-ghost btn-sm">↺ Refresh</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th>Route / Summary</th>
+                <th>Operator</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--color-text-muted)">
+                Loading logs…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /tabLogs -->
 
     </div><!-- /admin-content -->
   </div><!-- /adminTableWrap -->
@@ -149,18 +247,20 @@
 </div><!-- /adminView -->
 
 <!-- ══════════════════════════════════════════════════════════
-     RATE FORM MODAL
+     RATE FORM MODAL (Add / Edit)
 ═══════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="rateModal">
-  <div class="modal">
+  <div class="modal" style="max-width:700px">
     <div class="modal-header">
       <span class="modal-title" id="modalTitle">Add New Rate</span>
       <button class="modal-close" id="btnModalClose" type="button">×</button>
     </div>
     <div class="modal-body">
       <form id="rateForm" class="rate-form" novalidate>
-        <div class="form-grid">
 
+        <!-- Common Fields -->
+        <div class="form-section-title">Basic Information</div>
+        <div class="form-grid">
           <!-- Type -->
           <div class="form-group">
             <label class="form-label" for="fType">Freight Type *</label>
@@ -169,35 +269,30 @@
               <option value="ocean">Ocean Freight</option>
             </select>
           </div>
-
           <!-- Carrier -->
           <div class="form-group">
             <label class="form-label" for="fCarrier">Carrier</label>
             <input class="form-control" id="fCarrier" type="text"
                    placeholder="e.g. CX, COSCO" autocapitalize="characters">
           </div>
-
           <!-- Origin -->
           <div class="form-group">
             <label class="form-label" for="fOrigin">Origin *</label>
             <input class="form-control" id="fOrigin" type="text"
                    placeholder="e.g. SHA" required autocapitalize="characters">
           </div>
-
           <!-- Destination -->
           <div class="form-group">
             <label class="form-label" for="fDest">Destination *</label>
             <input class="form-control" id="fDest" type="text"
                    placeholder="e.g. LAX" required autocapitalize="characters">
           </div>
-
-          <!-- Rate -->
+          <!-- Commodity -->
           <div class="form-group">
-            <label class="form-label" for="fRate">Rate *</label>
-            <input class="form-control" id="fRate" type="number"
-                   min="0" step="any" placeholder="0.00" required>
+            <label class="form-label" for="fCommodity">Commodity</label>
+            <input class="form-control" id="fCommodity" type="text"
+                   placeholder="e.g. General Cargo">
           </div>
-
           <!-- Currency -->
           <div class="form-group">
             <label class="form-label" for="fCurrency">Currency</label>
@@ -208,52 +303,96 @@
               <option value="HKD">HKD</option>
             </select>
           </div>
+        </div>
 
-          <!-- Unit -->
-          <div class="form-group">
-            <label class="form-label" for="fUnit">Unit</label>
-            <select class="form-control" id="fUnit">
-              <option value="kg">kg</option>
-              <option value="cbm">cbm</option>
-              <option value="teu">teu</option>
-              <option value="shipment">shipment</option>
-            </select>
+        <!-- Ocean Pricing (shown when type = ocean) -->
+        <div id="oceanPricingSection" class="pricing-section hidden">
+          <div class="form-section-title">Ocean Freight Pricing</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="fRateOcean">Rate *</label>
+              <input class="form-control" id="fRateOcean" type="number"
+                     min="0" step="any" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fUnitOcean">Unit</label>
+              <select class="form-control" id="fUnitOcean">
+                <option value="teu">TEU</option>
+                <option value="cbm">CBM</option>
+                <option value="shipment">Per Shipment</option>
+                <option value="kg">kg</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fMinChargeOcean">Min Charge</label>
+              <input class="form-control" id="fMinChargeOcean" type="number"
+                     min="0" step="any" placeholder="Optional">
+            </div>
           </div>
+        </div>
 
-          <!-- Min Charge -->
-          <div class="form-group">
-            <label class="form-label" for="fMinCharge">Min Charge</label>
-            <input class="form-control" id="fMinCharge" type="number"
-                   min="0" step="any" placeholder="Optional">
+        <!-- Air Pricing (shown when type = air) -->
+        <div id="airPricingSection" class="pricing-section hidden">
+          <div class="form-section-title">Air Freight Pricing (CNY)</div>
+          <div class="air-pricing-grid">
+            <div class="air-pricing-row air-pricing-header">
+              <span>Min Charge</span>
+              <span>−45 kg</span>
+              <span>+45 kg</span>
+              <span>+100 kg</span>
+              <span>+300 kg</span>
+              <span>+500 kg</span>
+              <span>+1000 kg</span>
+            </div>
+            <div class="air-pricing-row">
+              <input class="form-control" id="fRateMin" type="number" min="0" step="any" placeholder="Min">
+              <input class="form-control" id="fRateNeg45" type="number" min="0" step="any" placeholder="≤45kg">
+              <input class="form-control" id="fRatePos45" type="number" min="0" step="any" placeholder=">45kg">
+              <input class="form-control" id="fRatePos100" type="number" min="0" step="any" placeholder=">100kg">
+              <input class="form-control" id="fRatePos300" type="number" min="0" step="any" placeholder=">300kg">
+              <input class="form-control" id="fRatePos500" type="number" min="0" step="any" placeholder=">500kg">
+              <input class="form-control" id="fRatePos1000" type="number" min="0" step="any" placeholder=">1000kg">
+            </div>
           </div>
-
-          <!-- Commodity -->
-          <div class="form-group full-width">
-            <label class="form-label" for="fCommodity">Commodity</label>
-            <input class="form-control" id="fCommodity" type="text"
-                   placeholder="e.g. General Cargo, FCL, LCL">
+          <div class="form-grid" style="margin-top:12px;">
+            <div class="form-group">
+              <label class="form-label" for="fMinChargeAir">Min Charge (CNY)</label>
+              <input class="form-control" id="fMinChargeAir" type="number"
+                     min="0" step="any" placeholder="Optional">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fDensityRatio">Density Ratio (比重要求)</label>
+              <select class="form-control" id="fDensityRatio">
+                <option value="">— None —</option>
+                <option value="1:200">1:200</option>
+                <option value="1:300">1:300</option>
+                <option value="1:500">1:500</option>
+                <option value="1:600">1:600</option>
+              </select>
+            </div>
           </div>
+        </div>
 
-          <!-- Valid From -->
+        <!-- Validity -->
+        <div class="form-section-title">Validity Period</div>
+        <div class="form-grid">
           <div class="form-group">
             <label class="form-label" for="fValidFrom">Valid From</label>
             <input class="form-control" id="fValidFrom" type="date">
           </div>
-
-          <!-- Valid To -->
           <div class="form-group">
             <label class="form-label" for="fValidTo">Valid To</label>
             <input class="form-control" id="fValidTo" type="date">
           </div>
+        </div>
 
-          <!-- Remark -->
-          <div class="form-group full-width">
-            <label class="form-label" for="fRemark">Remark</label>
-            <textarea class="form-control" id="fRemark" rows="2"
-                      placeholder="Optional notes"></textarea>
-          </div>
+        <!-- Remark -->
+        <div class="form-group full-width" style="margin-top:8px;">
+          <label class="form-label" for="fRemark">Remark</label>
+          <textarea class="form-control" id="fRemark" rows="2"
+                    placeholder="Optional notes"></textarea>
+        </div>
 
-        </div><!-- /form-grid -->
       </form>
     </div>
     <div class="modal-footer">
@@ -273,24 +412,18 @@
       <button class="modal-close" id="btnImportClose" type="button">×</button>
     </div>
     <div class="modal-body">
-
-      <!-- Template download banner -->
       <div class="template-banner">
         <p>Download the template to see the required column format:</p>
         <button id="btnDownloadTemplate" class="btn btn-outline btn-sm">
           ⬇ Download Template (CSV)
         </button>
       </div>
-
-      <!-- Drop Zone -->
       <div class="import-drop-zone" id="importDropZone">
         <div class="drop-icon">📄</div>
         <div class="drop-hint">Click to browse, or drag &amp; drop a file here</div>
         <div class="drop-sub">Supports .xlsx and .csv files</div>
         <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" class="hidden">
       </div>
-
-      <!-- Preview (hidden until file parsed) -->
       <div id="importPreviewSection" class="hidden">
         <div class="import-preview-header">Preview (first 20 rows shown)</div>
         <div class="import-preview-table-wrap">
@@ -307,13 +440,137 @@
         </div>
         <div class="import-summary" id="importSummary"></div>
       </div>
-
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="btnImportCancel" type="button">Cancel</button>
       <button class="btn btn-primary" id="btnImportConfirm" disabled>
         Confirm Import
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     AI IMAGE SCAN MODAL
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="aiScanModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title">🤖 AI Image Recognition — Scan Rate Table</span>
+      <button class="modal-close" id="btnAiScanClose" type="button">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Upload -->
+      <div id="aiScanStep1">
+        <div class="ai-drop-zone" id="aiDropZone">
+          <div class="ai-drop-icon">🖼</div>
+          <div class="ai-drop-hint">Drop an image here, click to upload, or paste from clipboard</div>
+          <div class="ai-drop-sub">Supports: JPG, PNG, PDF screenshot of a rate table</div>
+          <img id="aiImagePreview" class="ai-image-preview hidden" alt="Uploaded image">
+          <input type="file" id="aiFileInput" accept="image/*,.pdf" class="hidden">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button id="btnAiScanStart" class="btn btn-primary" disabled>
+            🔍 Scan Image with AI OCR
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Scanning progress -->
+      <div id="aiScanStep2" class="hidden">
+        <div class="ai-progress">
+          <div class="ai-progress-text" id="aiProgressText">Initializing OCR engine…</div>
+          <div class="ai-progress-bar-wrap">
+            <div class="ai-progress-bar" id="aiProgressBar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Preview & edit results -->
+      <div id="aiScanStep3" class="hidden">
+        <div class="ai-results-header">Recognized Data — review and edit before importing</div>
+        <div class="ai-results-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Origin *</label>
+              <input class="form-control" id="aiOrigin" type="text" placeholder="e.g. SHA" autocapitalize="characters">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Destination *</label>
+              <input class="form-control" id="aiDest" type="text" placeholder="e.g. LAX" autocapitalize="characters">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Carrier</label>
+              <input class="form-control" id="aiCarrier" type="text" placeholder="e.g. CX" autocapitalize="characters">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Commodity</label>
+              <input class="form-control" id="aiCommodity" type="text" placeholder="General Cargo">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Currency</label>
+              <select class="form-control" id="aiCurrency">
+                <option value="CNY">CNY</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="HKD">HKD</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Density Ratio</label>
+              <select class="form-control" id="aiDensityRatio">
+                <option value="">— None —</option>
+                <option value="1:200">1:200</option>
+                <option value="1:300">1:300</option>
+                <option value="1:500">1:500</option>
+                <option value="1:600">1:600</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-section-title" style="margin-top:12px;">Price Tiers (CNY)</div>
+          <div class="air-pricing-grid">
+            <div class="air-pricing-row air-pricing-header">
+              <span>Min</span><span>−45 kg</span><span>+45 kg</span>
+              <span>+100 kg</span><span>+300 kg</span><span>+500 kg</span><span>+1000 kg</span>
+            </div>
+            <div class="air-pricing-row">
+              <input class="form-control" id="aiRateMin" type="number" min="0" step="any" placeholder="Min">
+              <input class="form-control" id="aiRateNeg45" type="number" min="0" step="any" placeholder="≤45">
+              <input class="form-control" id="aiRatePos45" type="number" min="0" step="any" placeholder=">45">
+              <input class="form-control" id="aiRatePos100" type="number" min="0" step="any" placeholder=">100">
+              <input class="form-control" id="aiRatePos300" type="number" min="0" step="any" placeholder=">300">
+              <input class="form-control" id="aiRatePos500" type="number" min="0" step="any" placeholder=">500">
+              <input class="form-control" id="aiRatePos1000" type="number" min="0" step="any" placeholder=">1000">
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top:12px;">
+            <div class="form-group">
+              <label class="form-label">Min Charge (CNY)</label>
+              <input class="form-control" id="aiMinCharge" type="number" min="0" step="any" placeholder="Optional">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Valid From</label>
+              <input class="form-control" id="aiValidFrom" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Valid To</label>
+              <input class="form-control" id="aiValidTo" type="date">
+            </div>
+          </div>
+          <div class="form-group full-width" style="margin-top:8px;">
+            <label class="form-label">Remark</label>
+            <input class="form-control" id="aiRemark" type="text" placeholder="Imported from AI scan">
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnAiScanCancel" type="button">Cancel</button>
+      <button class="btn btn-primary hidden" id="btnAiScanConfirm">Add to Rates →</button>
     </div>
   </div>
 </div>

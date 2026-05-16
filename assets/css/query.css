@@ -310,3 +310,119 @@
   gap: var(--space-2);
   font-weight: 500;
 }
+
+/* ── Price tiers (v2 — 2026-05) ─────────────────────────────── */
+
+/* Card: primary price display */
+.card-price-primary {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.card-price-unit {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.card-price-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.tier-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* Density tags */
+.density-tag {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.density-tag-sm {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Card: tiers detail (expanded view) */
+.rate-tiers-detail {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.tier-row:last-child {
+  border-bottom: none;
+}
+
+.tier-row .tier-name {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.tier-row .tier-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* Table: tiers cell */
+.td-tiers {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.tier-cell {
+  display: inline-block;
+  margin: 1px 2px;
+  padding: 1px 4px;
+  background: #fff0f0;
+  color: var(--color-primary);
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* Table: density column */
+td .density-tag-sm {
+  display: inline-block;
+}
+
+/* Search grid: currency filter */
+@media (min-width: 768px) {
+  .search-grid {
+    grid-template-columns: repeat(5, 1fr);
+    align-items: flex-end;
+  }
+}
