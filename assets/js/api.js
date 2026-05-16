@@ -35,11 +35,12 @@ const API = (() => {
    * @param {Object} obj
    */
   function toSnake(obj) {
+    const _snake = key => key
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .replace(/([A-Z]+)([A-Z][a-z0-9])/g, '$1_$2')
+      .toLowerCase();
     return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [
-        k.replace(/[A-Z]/g, c => c.toLowerCase()),
-        v,
-      ])
+      Object.entries(obj).map(([k, v]) => [_snake(k), v])
     );
   }
 
