@@ -117,6 +117,12 @@ const QueryApp = (() => {
       if (el) el.addEventListener('input', Utils.debounce(_render, 250));
     });
 
+    // Search button — explicit confirm
+    const searchBtn = $('btnSearch');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => _render());
+    }
+
     const clearBtn = $('btnClearFilters');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
@@ -138,8 +144,21 @@ const QueryApp = (() => {
 
   function _applyFilters(rates) {
     const f = _getFilters();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return rates.filter(r => {
+      // 1. Type filter
       if (r.type !== _activeTab) return false;
+
+      // 2. Hide expired rates (validTo < today)
+      if (r.validTo) {
+        const validTo = new Date(r.validTo);
+        validTo.setHours(0, 0, 0, 0);
+        if (validTo < today) return false;
+      }
+
+      // 3. Keyword filters (any field can be used individually)
       if (f.origin  && !r.origin?.toUpperCase().includes(f.origin))    return false;
       if (f.dest    && !r.destination?.toUpperCase().includes(f.dest)) return false;
       if (f.carrier && !r.carrier?.toUpperCase().includes(f.carrier))  return false;
@@ -150,17 +169,19 @@ const QueryApp = (() => {
 
   // ── Price Helpers ────────────────────────────────────────────────
   /**
-   * Convert a CNY price to display currency, then apply markup.
+   * Convert a CNY price: first apply markup, then convert to display currency.
    * @param {number} cnyVal
    * @returns {number}
    */
   function _applyDisplay(cnyVal) {
     if (cnyVal == null || isNaN(cnyVal)) return null;
-    let displayVal = cnyVal;
+    // Step 1: Apply markup to CNY base price
+    const markedUp = cnyVal * (1 + (_settings.markupPercent || 0) / 100);
+    // Step 2: Convert to USD if needed
     if (_displayCurrency === 'USD') {
-      displayVal = cnyVal / (_settings.exchangeRate || 7.0);
+      return markedUp / (_settings.exchangeRate || 7.0);
     }
-    return displayVal * (1 + (_settings.markupPercent || 0) / 100);
+    return markedUp;
   }
 
   /**
@@ -238,7 +259,7 @@ const QueryApp = (() => {
         <div class="card-price-meta"><span class="tier-label">${origCurrency} base</span></div>`;
     }
 
-    // Tiers detail (expandable for air)
+    // Tiers detail — ALWAYS show all 7 tiers for air freight
     let tiersDetail = '';
     if (isAir) {
       const tierLabels = [
@@ -250,17 +271,14 @@ const QueryApp = (() => {
         { key: 'ratePos500', label: '>500kg' },
         { key: 'ratePos1000',label: '>1000kg' },
       ];
-      const filled = tierLabels.filter(t => r[t.key] != null && !isNaN(parseFloat(r[t.key])));
-      if (filled.length > 1) {
-        tiersDetail = `
-          <div class="rate-tiers-detail">
-            ${filled.map(t => `
-              <div class="tier-row">
-                <span class="tier-name">${t.label}</span>
-                <span class="tier-value">${_fmtVal(_applyDisplay(parseFloat(r[t.key])))}/kg</span>
-              </div>`).join('')}
-          </div>`;
-      }
+      tiersDetail = `
+        <div class="rate-tiers-detail">
+          ${tierLabels.map(t => `
+            <div class="tier-row">
+              <span class="tier-name">${t.label}</span>
+              <span class="tier-value">${_fmtVal(_applyDisplay(parseFloat(r[t.key]))) || '—'}/kg</span>
+            </div>`).join('')}
+        </div>`;
     }
 
     return `
@@ -341,25 +359,18 @@ const QueryApp = (() => {
         ? `<span class="density-tag-sm">${r.densityRatio}</span>`
         : '—';
 
-      // Tiers
+      // Tiers — ALWAYS show all 7 tier cells for air freight
       let tiersHtml = '—';
       if (isAir) {
-        const tierKeys = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
-        const tierLabels = ['Min','−45','+45','+100','+300','+500','+1000'];
-        const filled = tierKeys
-          .map((k, i) => ({ key: k, label: tierLabels[i], val: parseFloat(r[k]) }))
-          .filter(t => !isNaN(t.val));
-
-        if (filled.length === 1) {
-          tiersHtml = _fmtVal(_applyDisplay(filled[0].val)) + '/kg';
-        } else if (filled.length > 1) {
-          tiersHtml = filled.map(t =>
-            `<span class="tier-cell" title="${t.label}">${_fmtVal(_applyDisplay(t.val))}</span>`
-          ).join('');
-        }
+        const tierKeys    = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
+        const tierLabels  = ['Min','−45','+45','+100','+300','+500','+1000'];
+        tiersHtml = tierKeys.map((k, i) => {
+          const val = parseFloat(r[k]);
+          return `<span class="tier-cell" title="${tierLabels[i]}">${_fmtVal(val) || '—'}</span>`;
+        }).join('');
       } else {
         const v = parseFloat(r.rate);
-        tiersHtml = isNaN(v) ? '—' : _fmtVal(_applyDisplay(v));
+        tiersHtml = isNaN(v) ? '—' : _fmtVal(v);
       }
 
       // Primary rate (for sort)

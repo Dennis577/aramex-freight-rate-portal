@@ -139,7 +139,13 @@
                 <th data-sort="carrier">Carrier <span class="sort-icon">⇅</span></th>
                 <th data-sort="commodity">Commodity <span class="sort-icon">⇅</span></th>
                 <th>Density</th>
-                <th>Price Tiers</th>
+                <th>Min</th>
+                <th>≤45kg</th>
+                <th>>45kg</th>
+                <th>>100kg</th>
+                <th>>300kg</th>
+                <th>>500kg</th>
+                <th>>1000kg</th>
                 <th data-sort="rate">Rate <span class="sort-icon">⇅</span></th>
                 <th data-sort="validFrom">Valid From <span class="sort-icon">⇅</span></th>
                 <th data-sort="validTo">Valid To <span class="sort-icon">⇅</span></th>
@@ -463,17 +469,45 @@
 
       <!-- Step 1: Upload -->
       <div id="aiScanStep1">
-        <div class="ai-drop-zone" id="aiDropZone">
-          <div class="ai-drop-icon">🖼</div>
-          <div class="ai-drop-hint">Drop an image here, click to upload, or paste from clipboard</div>
-          <div class="ai-drop-sub">Supports: JPG, PNG, PDF screenshot of a rate table</div>
-          <img id="aiImagePreview" class="ai-image-preview hidden" alt="Uploaded image">
-          <input type="file" id="aiFileInput" accept="image/*,.pdf" class="hidden">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button id="btnAiScanStart" class="btn btn-primary" disabled>
-            🔍 Scan Image with AI OCR
+        <div class="ai-tab-bar">
+          <button class="ai-tab-btn active" id="btnAiTabImage" onclick="_switchAiTab('image')">
+            🖼 Image Upload
           </button>
+          <button class="ai-tab-btn" id="btnAiTabText" onclick="_switchAiTab('text')">
+            📋 Paste Table Text
+          </button>
+        </div>
+
+        <!-- Image upload area -->
+        <div id="aiImageTab">
+          <div class="ai-drop-zone" id="aiDropZone">
+            <div class="ai-drop-icon">🖼</div>
+            <div class="ai-drop-hint">Drop an image here, click to upload, or paste from clipboard</div>
+            <div class="ai-drop-sub">Supports: JPG, PNG, PDF screenshot of a rate table</div>
+            <img id="aiImagePreview" class="ai-image-preview hidden" alt="Uploaded image">
+            <input type="file" id="aiFileInput" accept="image/*,.pdf" class="hidden">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button id="btnAiScanStart" class="btn btn-primary" disabled>
+              🔍 Scan Image with AI OCR
+            </button>
+          </div>
+        </div>
+
+        <!-- Text paste area -->
+        <div id="aiTextTab" class="hidden">
+          <div class="ai-text-hint">
+            Paste your rate table data below — paste from Excel, a webpage, or any text source.
+            The system will auto-detect column headers and rows.
+          </div>
+          <textarea id="aiPasteArea" class="ai-paste-area"
+            placeholder="Paste rate table data here, e.g.:&#10;Origin | Destination | Carrier | Min | +45kg | +100kg&#10;SHA | LAX | CX | 150 | 35 | 28&#10;PEK | FRA | LH | 160 | 38 | 30"
+            rows="8"></textarea>
+          <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+            <button id="btnAiParseText" class="btn btn-primary" onclick="_parsePastedText()">
+              🔎 Parse &amp; Preview
+            </button>
+          </div>
         </div>
       </div>
 
@@ -567,10 +601,22 @@
         </div>
       </div>
 
+      <!-- Step 4: Text paste parsed preview -->
+      <div id="aiScanStep4" class="hidden">
+        <div class="ai-text-preview-header">
+          📋 Parsed Rows — review and edit before importing
+        </div>
+        <div class="ai-text-preview-table-wrap" id="aiTextPreviewTableWrap">
+          <!-- Populated by JS -->
+        </div>
+        <div class="ai-text-preview-summary" id="aiTextPreviewSummary"></div>
+      </div>
+
     </div><!-- /modal-body -->
     <div class="modal-footer">
       <button class="btn btn-ghost" id="btnAiScanCancel" type="button">Cancel</button>
       <button class="btn btn-primary hidden" id="btnAiScanConfirm">Add to Rates →</button>
+      <button class="btn btn-primary hidden" id="btnAiTextConfirm">Import All Rows →</button>
     </div>
   </div>
 </div>

@@ -202,8 +202,12 @@
 .admin-table tr:hover td { background: #fff5f5; }
 
 .admin-table tr.expired td {
-  background: var(--color-expired-bg) !important;
-  color: var(--color-expired-text);
+  background: #fff3e0 !important;
+  color: #bf360c;
+}
+
+.admin-table tr.expired td:first-child {
+  border-left: 3px solid #ff6d00;
 }
 
 .admin-table .td-actions {
@@ -741,4 +745,144 @@
 .btn-xs {
   font-size: var(--font-size-xs);
   padding: 2px 8px;
+}
+
+/* --- AI Scan: Tab Bar (Image vs Text) --- */
+.ai-tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.ai-tab-btn {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition: background .15s, color .15s;
+}
+
+.ai-tab-btn.active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+
+/* --- Text Paste --- */
+.ai-text-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: #f8f9fa;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  line-height: 1.5;
+}
+
+.ai-paste-area {
+  width: 100%;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  padding: var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  background: #fafbfc;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+.ai-paste-area:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: white;
+}
+
+/* --- Text Preview Table --- */
+.ai-text-preview-header {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.ai-text-preview-table-wrap {
+  overflow-x: auto;
+  max-height: 320px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+.ai-text-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ai-text-preview-table th {
+  background: var(--color-primary);
+  color: white;
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+.ai-text-preview-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  background: white;
+}
+
+.ai-text-preview-table tr:hover td {
+  background: #fff5f5;
+}
+
+.ai-text-preview-table td.row-error-cell {
+  background: #fff3e0 !important;
+  color: #bf360c;
+}
+
+.ai-text-preview-table td.editable-cell {
+  cursor: text;
+}
+
+.ai-text-preview-table td.editable-cell:hover {
+  background: #fff9c4 !important;
+}
+
+.ai-text-preview-summary {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+  flex-wrap: wrap;
+}
+
+.ai-text-preview-summary .summary-ok { color: var(--color-success); font-weight: 600; }
+.ai-text-preview-summary .summary-warn { color: var(--color-warning); font-weight: 600; }
+
+/* --- Tier cell in admin table --- */
+.admin-table .td-tier-cell {
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
 }

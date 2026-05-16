@@ -87,11 +87,14 @@
 
         <!-- Search / Clear buttons -->
         <div class="form-group" style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button id="btnSearch" class="btn btn-primary btn-sm" type="button">
+            🔍 Search
+          </button>
           <button id="btnClearFilters" class="btn btn-ghost btn-sm" type="button">
             ✕ Clear
           </button>
           <span class="text-muted text-xs" style="align-self:center;margin-left:4px;">
-            Results update automatically as you type
+            Fill any field and click Search — leave blank to show all
           </span>
           <span class="rate-settings-badge" id="rateSettingsBadge" style="display:none;">
             <span id="markupBadge" style="display:none;"></span>

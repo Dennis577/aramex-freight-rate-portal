@@ -125,7 +125,7 @@ const AdminApp = (() => {
 
     if (!slice.length) {
       tbody.innerHTML = `
-        <tr><td colspan="12" style="text-align:center;padding:32px;color:var(--color-text-muted)">
+        <tr><td colspan="18" style="text-align:center;padding:32px;color:var(--color-text-muted)">
           No rates found
         </td></tr>`;
     } else {
@@ -144,21 +144,22 @@ const AdminApp = (() => {
     const badge    = isAir
       ? '<span class="badge badge-air">Air</span>'
       : '<span class="badge badge-ocean">Ocean</span>';
+    const tierKeys   = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
 
-    // Price tiers display
+    // Price tiers display — ALWAYS show all 7 cells for air freight
     let priceTiersHtml = '—';
     if (isAir) {
-      const tiers = [
-        r.rateMin, r.rateNeg45, r.ratePos45,
-        r.ratePos100, r.ratePos300, r.ratePos500, r.ratePos1000,
-      ].filter(v => v != null && !isNaN(parseFloat(v)));
-      priceTiersHtml = tiers.length
-        ? `<span class="tier-badge">${tiers.length} tiers</span>`
-        : '—';
+      const tierKeys   = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
+      const tierLabels = ['Min','≤45','>45','>100','>300','>500','>1000'];
+      priceTiersHtml = tierKeys.map((k, i) => {
+        const val = parseFloat(r[k]);
+        const formatted = isNaN(val) ? '—' : `${r.currency||'¥'}${val.toFixed(2)}`;
+        return `<span class="tier-cell" title="${tierLabels[i]}">${formatted}</span>`;
+      }).join('');
     } else {
       const v = parseFloat(r.rate);
       priceTiersHtml = isNaN(v) ? '—'
-        : `${r.currency||'CNY'} ${v} / ${r.unit||'teu'}`;
+        : `${r.currency||'CNY'} ${v.toFixed(2)} / ${r.unit||'teu'}`;
     }
 
     // Density ratio display
@@ -177,7 +178,7 @@ const AdminApp = (() => {
         <td>${Utils.esc(r.carrier || '—')}</td>
         <td>${Utils.esc(r.commodity || 'General')}</td>
         <td>${densityHtml}</td>
-        <td class="td-tiers">${priceTiersHtml}</td>
+        ${isAir ? tierKeys.map(k => `<td class="td-tier-cell">${_fmtTierCell(r, k)}</td>`).join('') : '<td>—</td>'.repeat(7)}
         <td class="td-price">${_fmtPrimaryRate(r)}</td>
         <td>${Utils.fmtDate(r.validFrom)}</td>
         <td style="color:${expired ? 'var(--color-expired-text)' : 'inherit'};font-weight:${expired?'700':'400'}">
@@ -201,6 +202,13 @@ const AdminApp = (() => {
     const v = parseFloat(r.rate);
     if (isNaN(v)) return '—';
     return `${r.currency||'CNY'} ${v.toFixed(2)}/${r.unit||'unit'}`;
+  }
+
+  /** Format a single tier cell value */
+  function _fmtTierCell(r, key) {
+    const val = parseFloat(r[key]);
+    if (isNaN(val)) return '—';
+    return `${r.currency||'¥'}${val.toFixed(2)}`;
   }
 
   // ── Admin Tab Navigation ───────────────────────────────────
@@ -761,13 +769,20 @@ const AdminApp = (() => {
     document.getElementById('aiScanStep1')?.classList.remove('hidden');
     document.getElementById('aiScanStep2')?.classList.add('hidden');
     document.getElementById('aiScanStep3')?.classList.add('hidden');
+    document.getElementById('aiScanStep4')?.classList.add('hidden');
     document.getElementById('btnAiScanConfirm')?.classList.add('hidden');
+    document.getElementById('btnAiTextConfirm')?.classList.add('hidden');
     document.getElementById('aiImagePreview')?.classList.add('hidden');
     document.getElementById('aiDropZone')?.classList.remove('drag-over', 'drag-over-light');
     document.getElementById('btnAiScanStart')?.setAttribute('disabled', 'true');
     document.getElementById('aiProgressBar')?.style.setProperty('width', '0%');
     const fi = document.getElementById('aiFileInput');
     if (fi) fi.value = '';
+    // Clear text paste
+    const ta = document.getElementById('aiPasteArea');
+    if (ta) ta.value = '';
+    // Switch back to image tab
+    _switchAiTab('image');
     // Clear AI form fields
     ['aiOrigin','aiDest','aiCarrier','aiCommodity','aiRateMin','aiRateNeg45',
      'aiRatePos45','aiRatePos100','aiRatePos300','aiRatePos500',
@@ -817,8 +832,237 @@ const AdminApp = (() => {
     // Scan button
     document.getElementById('btnAiScanStart')?.addEventListener('click', _runOcr);
 
-    // Confirm button
+    // Confirm button (image OCR path)
     document.getElementById('btnAiScanConfirm')?.addEventListener('click', _confirmAiScan);
+
+    // Text paste import
+    document.getElementById('btnAiTextConfirm')?.addEventListener('click', _confirmTextImport);
+  }
+
+  // ── AI Scan: Tab Switching (Image vs Text) ───────────────
+  function _switchAiTab(tab) {
+    const imageTab = document.getElementById('aiImageTab');
+    const textTab  = document.getElementById('aiTextTab');
+    const imgBtn   = document.getElementById('btnAiTabImage');
+    const txtBtn   = document.getElementById('btnAiTabText');
+    if (tab === 'image') {
+      imageTab?.classList.remove('hidden');
+      textTab?.classList.add('hidden');
+      imgBtn?.classList.add('active');
+      txtBtn?.classList.remove('active');
+    } else {
+      imageTab?.classList.add('hidden');
+      textTab?.classList.remove('hidden');
+      imgBtn?.classList.remove('active');
+      txtBtn?.classList.add('active');
+    }
+  }
+
+  // ── Text Paste Parsing ────────────────────────────────────
+  /** Parse pasted table text into structured row objects */
+  function _parsePastedText() {
+    const raw = document.getElementById('aiPasteArea')?.value?.trim();
+    if (!raw) { alert('Please paste some data first.'); return; }
+
+    const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 1) { alert('No data found.'); return; }
+
+    // Detect delimiter: tab, pipe, comma, multiple spaces
+    const SEP_PATTERNS = [/\t/, /\s*\|\s*/, /,/];
+    let separator = null;
+    for (const pat of SEP_PATTERNS) {
+      if (lines[0].match(pat)) { separator = pat; break; }
+    }
+    if (!separator) {
+      // Fall back: split by 2+ spaces
+      separator = /\s{2,}/;
+    }
+
+    // Parse header row
+    const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
+    const FIELD_MAP = {
+      origin:      ['origin', 'ori', 'from', 'orig'],
+      destination: ['destination', 'dest', 'to', 'dst'],
+      carrier:     ['carrier', 'airline', '航空公司', 'flight'],
+      type:        ['type', 'freight', 'mode'],
+      commodity:   ['commodity', 'cargo', '品名'],
+      ratemin:     ['min', 'minimum', 'min charge', 'mincharge', '最低'],
+      rateneg45:   ['-45', 'neg45', '≤45', '45kg', '≤45kg'],
+      ratepos45:   ['+45', 'pos45', '>45', '>45kg', '+45kg'],
+      ratepos100:  ['+100', 'pos100', '>100', '>100kg', '+100kg'],
+      ratepos300:  ['+300', 'pos300', '>300', '>300kg', '+300kg'],
+      ratepos500:  ['+500', 'pos500', '>500', '>500kg', '+500kg'],
+      ratepos1000: ['+1000', 'pos1000', '>1000', '>1000kg', '+1000kg'],
+      mincharge:   ['minchg', 'min charge', '最低收费'],
+      density:     ['density', '比重', 'ratio'],
+      currency:    ['currency', '币种', 'curr'],
+      validfrom:   ['valid from', 'validfrom', '起始', 'validfrom'],
+      validto:     ['valid to', 'validto', '截止', 'validto'],
+    };
+
+    // Find column indices for each field
+    const colIndex = {};
+    headers.forEach((h, i) => {
+      for (const [field, aliases] of Object.entries(FIELD_MAP)) {
+        if (aliases.some(a => h.includes(a))) {
+          colIndex[field] = i;
+        }
+      }
+    });
+
+    // Parse data rows
+    const parsedRows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = lines[i].split(separator).map(c => c.trim());
+      if (!cells.some(c => c)) continue; // skip empty rows
+
+      const row = {
+        _line: i + 1,
+        _valid: true,
+        origin:       colIndex.origin      != null ? cells[colIndex.origin]      : '',
+        destination:  colIndex.destination != null ? cells[colIndex.destination] : '',
+        carrier:      colIndex.carrier      != null ? cells[colIndex.carrier]      : '',
+        type:         colIndex.type         != null ? cells[colIndex.type]         : 'air',
+        commodity:    colIndex.commodity   != null ? cells[colIndex.commodity]   : '',
+        rateMin:      colIndex.ratemin      != null ? parseFloat(cells[colIndex.ratemin]?.replace(/,/g,'')) : null,
+        rateNeg45:    colIndex.rateneg45    != null ? parseFloat(cells[colIndex.rateneg45]?.replace(/,/g,'')) : null,
+        ratePos45:    colIndex.ratepos45    != null ? parseFloat(cells[colIndex.ratepos45]?.replace(/,/g,'')) : null,
+        ratePos100:   colIndex.ratepos100   != null ? parseFloat(cells[colIndex.ratepos100]?.replace(/,/g,'')) : null,
+        ratePos300:   colIndex.ratepos300   != null ? parseFloat(cells[colIndex.ratepos300]?.replace(/,/g,'')) : null,
+        ratePos500:   colIndex.ratepos500   != null ? parseFloat(cells[colIndex.ratepos500]?.replace(/,/g,'')) : null,
+        ratePos1000:  colIndex.ratepos1000  != null ? parseFloat(cells[colIndex.ratepos1000]?.replace(/,/g,'')) : null,
+        minCharge:    colIndex.mincharge    != null ? parseFloat(cells[colIndex.mincharge]?.replace(/,/g,'')) : null,
+        densityRatio: colIndex.density      != null ? cells[colIndex.density]        : '',
+        currency:     colIndex.currency     != null ? cells[colIndex.currency]       : 'CNY',
+        validFrom:    colIndex.validfrom    != null ? cells[colIndex.validfrom]      : '',
+        validTo:      colIndex.validto      != null ? cells[colIndex.validto]        : '',
+        remark:       '',
+      };
+
+      // Validate: need origin + destination + at least one price
+      const hasPrice = [row.rateMin, row.rateNeg45, row.ratePos45, row.ratePos100,
+                        row.ratePos300, row.ratePos500, row.ratePos1000].some(v => !isNaN(v));
+      if (!row.origin || !row.destination) row._valid = false;
+
+      parsedRows.push(row);
+    }
+
+    if (!parsedRows.length) { alert('Could not parse any rows. Check the format.'); return; }
+
+    // Store for editing
+    _importRows = parsedRows;
+    _renderTextPreview(parsedRows);
+  }
+
+  function _renderTextPreview(rows) {
+    const wrap = document.getElementById('aiTextPreviewTableWrap');
+    const summary = document.getElementById('aiTextPreviewSummary');
+    if (!wrap) return;
+
+    const validRows   = rows.filter(r => r._valid);
+    const invalidRows = rows.filter(r => !r._valid);
+
+    const headers = ['Origin','Destination','Carrier','Min','≤45kg','>45kg','>100kg','>300kg','>500kg','>1000kg','Density'];
+    const colKeys = ['origin','destination','carrier','rateMin','rateNeg45','ratePos45',
+                     'ratePos100','ratePos300','ratePos500','ratePos1000','densityRatio'];
+
+    let html = `<table class="ai-text-preview-table">
+      <thead><tr><th>#</th>${headers.map(h => `<th>${Utils.esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>`;
+
+    rows.forEach((r, i) => {
+      const errCls = r._valid ? '' : ' row-error-cell';
+      html += `<tr>
+        <td class="${errCls}" style="text-align:center;font-weight:700;">${i + 1}</td>
+        ${colKeys.map(k => {
+          let val = r[k];
+          if (val == null || isNaN(val)) val = '—';
+          else if (typeof val === 'number') val = val.toFixed(2);
+          return `<td class="editable-cell ${errCls}"
+            contenteditable="true"
+            data-row="${i}" data-key="${k}">${Utils.esc(String(val))}</td>`;
+        }).join('')}
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    if (summary) {
+      summary.innerHTML = `
+        <span class="summary-ok">✓ ${validRows.length} row(s) ready to import</span>
+        ${invalidRows.length ? `<span class="summary-warn">⚠ ${invalidRows.length} row(s) missing origin/destination (will be skipped)</span>` : ''}`;
+    }
+
+    document.getElementById('aiScanStep1')?.classList.add('hidden');
+    document.getElementById('aiScanStep4')?.classList.remove('hidden');
+    document.getElementById('btnAiTextConfirm')?.classList.remove('hidden');
+    document.getElementById('btnAiScanConfirm')?.classList.add('hidden');
+
+    // Wire up inline editing
+    wrap.querySelectorAll('.editable-cell').forEach(cell => {
+      cell.addEventListener('blur', () => {
+        const rowIdx = parseInt(cell.dataset.row);
+        const key    = cell.dataset.key;
+        const raw    = cell.textContent.trim();
+        const val    = parseFloat(raw.replace(/,/g, ''));
+        if (['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000',
+             'minCharge'].includes(key)) {
+          _importRows[rowIdx][key] = isNaN(val) ? null : val;
+        } else {
+          _importRows[rowIdx][key] = raw.toUpperCase();
+        }
+      });
+    });
+  }
+
+  async function _confirmTextImport() {
+    const validRows = _importRows.filter(r => r._valid);
+    if (!validRows.length) { alert('No valid rows to import.'); return; }
+
+    const now = new Date().toISOString();
+    const newRates = validRows.map(r => ({
+      id:           Utils.uuid(),
+      type:         'air',
+      origin:       String(r.origin || '').toUpperCase().trim(),
+      destination:  String(r.destination || '').toUpperCase().trim(),
+      carrier:      String(r.carrier || '').toUpperCase().trim(),
+      commodity:    String(r.commodity || '').trim(),
+      currency:     String(r.currency || 'CNY').toUpperCase().trim(),
+      unit:         'kg',
+      rateMin:      r.rateMin,
+      rateNeg45:    r.rateNeg45,
+      ratePos45:    r.ratePos45,
+      ratePos100:   r.ratePos100,
+      ratePos300:   r.ratePos300,
+      ratePos500:   r.ratePos500,
+      ratePos1000:  r.ratePos1000,
+      minCharge:    r.minCharge,
+      densityRatio: r.densityRatio || null,
+      validFrom:    r.validFrom || null,
+      validTo:      r.validTo || null,
+      remark:      `Imported from text paste (${new Date().toLocaleDateString()})`,
+      updatedAt:    now,
+      rate:         r.rateNeg45 ?? r.rateMin ?? 0,
+    }));
+
+    _rates.push(...newRates);
+    _closeAiScanModal();
+    _renderStats();
+    _renderTable();
+
+    try {
+      await API.batchUpsert(_rates);
+      await API.insertLog({
+        action:   'BATCH_IMPORT',
+        targetId: null,
+        oldData:  null,
+        newData:  newRates,
+        summary:  `Imported ${newRates.length} rate(s) from text paste`,
+      });
+      Utils.showSyncBar(`✓ Imported ${newRates.length} rate(s) from text`);
+    } catch (err) {
+      Utils.showSyncBar('✕ Import failed: ' + err.message, true);
+    }
   }
 
   function _handleAiFile(file) {
@@ -1047,5 +1291,11 @@ const AdminApp = (() => {
     editRate:   (id) => openModal(id),
     deleteRate: (id) => deleteRate(id),
     showLogDetail: (id) => showLogDetail(id),
+    _switchAiTab,
+    _parsePastedText,
   };
 })();
+
+// Global wrappers for HTML onclick handlers
+function _switchAiTab(tab) { AdminApp._switchAiTab(tab); }
+function _parsePastedText() { AdminApp._parsePastedText(); }
