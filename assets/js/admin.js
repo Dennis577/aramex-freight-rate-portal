@@ -386,7 +386,8 @@ const AdminApp = (() => {
       rateObj.minCharge = parseFloat(f('fMinChargeOcean')) || null;
       // Clear air-specific fields
       ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'].forEach(k => delete rateObj[k]);
-      rateObj.densityRatio = null;
+      // NOTE: densityRatio column not yet in DB — add it in Supabase first
+      // rateObj.densityRatio = null;
     } else {
       // Air: use rateNeg45 as primary rate field
       const parseTier = id => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; };
@@ -398,7 +399,8 @@ const AdminApp = (() => {
       rateObj.ratePos500 = parseTier('fRatePos500');
       rateObj.ratePos1000= parseTier('fRatePos1000');
       rateObj.minCharge  = parseTier('fMinChargeAir') || null;
-      rateObj.densityRatio = f('fDensityRatio') || null;
+      // NOTE: densityRatio column not yet in DB — add it in Supabase first
+      // rateObj.densityRatio = f('fDensityRatio') || null;
       rateObj.unit       = 'kg';
       // Use rateNeg45 as the "main" rate field for ocean compatibility
       rateObj.rate       = rateObj.rateNeg45 ?? rateObj.rateMin ?? 0;
@@ -1022,7 +1024,8 @@ const AdminApp = (() => {
       ratePos500:   r.ratePos500,
       ratePos1000:  r.ratePos1000,
       minCharge:    r.minCharge,
-      densityRatio: r.densityRatio || null,
+      // NOTE: densityRatio column not yet in DB
+      // densityRatio: r.densityRatio || null,
       validFrom:    r.validFrom || null,
       validTo:      r.validTo || null,
       remark:      `Imported from text paste (${new Date().toLocaleDateString()})`,
@@ -1227,7 +1230,8 @@ const AdminApp = (() => {
       ratePos500:   tiers.pos500 ? parseFloat(tiers.pos500) : null,
       ratePos1000:  tiers.pos1000? parseFloat(tiers.pos1000): null,
       minCharge:    _n(parseFloat(f('aiMinCharge'))) ? parseFloat(f('aiMinCharge')) : null,
-      densityRatio: f('aiDensityRatio') || null,
+      // NOTE: densityRatio column not yet in DB
+      // densityRatio: f('aiDensityRatio') || null,
       validFrom:    f('aiValidFrom') || null,
       validTo:      f('aiValidTo')   || null,
       remark:       f('aiRemark')    || 'Imported from AI scan',
@@ -1240,7 +1244,7 @@ const AdminApp = (() => {
     _renderTable();
 
     try {
-      await API.batchUpsert(_rates);
+      await API.upsertRate(rateObj);
       await API.insertLog({
         action:   'INSERT',
         targetId: rateObj.id,
