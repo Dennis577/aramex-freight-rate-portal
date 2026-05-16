@@ -312,10 +312,6 @@ const QueryApp = (() => {
             <span class="rate-field-value">${Utils.esc(r.commodity || 'General')}</span>
           </div>
           <div class="rate-field">
-            <span class="rate-field-label">Valid From</span>
-            <span class="rate-field-value">${Utils.fmtDate(r.validFrom)}</span>
-          </div>
-          <div class="rate-field">
             <span class="rate-field-label">Valid To</span>
             <span class="rate-field-value">${Utils.fmtDate(r.validTo)}</span>
           </div>
@@ -339,7 +335,7 @@ const QueryApp = (() => {
 
     if (!rates.length) {
       tbody.innerHTML = `
-        <tr><td colspan="12" style="text-align:center;padding:32px;color:var(--color-text-muted)">
+        <tr><td colspan="11" style="text-align:center;padding:32px;color:var(--color-text-muted)">
           No rates found
         </td></tr>`;
       return;
@@ -389,7 +385,6 @@ const QueryApp = (() => {
           <td class="td-tiers">${tiersHtml}</td>
           <td class="td-price">${_fmtVal(_applyDisplay(primaryVal))}</td>
           <td>${r.minCharge != null ? _fmtVal(_applyDisplay(parseFloat(r.minCharge))) : '—'}</td>
-          <td>${Utils.fmtDate(r.validFrom)}</td>
           <td style="color:${days !== null && days < 0 ? 'var(--color-error)' : expiring ? 'var(--color-warning)' : 'inherit'};font-weight:${expiring ? '700':'400'}">
             ${Utils.fmtDate(r.validTo)}
           </td>

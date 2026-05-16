@@ -125,7 +125,7 @@ const AdminApp = (() => {
 
     if (!slice.length) {
       tbody.innerHTML = `
-        <tr><td colspan="18" style="text-align:center;padding:32px;color:var(--color-text-muted)">
+        <tr><td colspan="16" style="text-align:center;padding:32px;color:var(--color-text-muted)">
           No rates found
         </td></tr>`;
     } else {
@@ -149,7 +149,6 @@ const AdminApp = (() => {
     // Price tiers display — ALWAYS show all 7 cells for air freight
     let priceTiersHtml = '—';
     if (isAir) {
-      const tierKeys   = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
       const tierLabels = ['Min','≤45','>45','>100','>300','>500','>1000'];
       priceTiersHtml = tierKeys.map((k, i) => {
         const val = parseFloat(r[k]);
@@ -179,8 +178,6 @@ const AdminApp = (() => {
         <td>${Utils.esc(r.commodity || 'General')}</td>
         <td>${densityHtml}</td>
         ${isAir ? tierKeys.map(k => `<td class="td-tier-cell">${_fmtTierCell(r, k)}</td>`).join('') : '<td>—</td>'.repeat(7)}
-        <td class="td-price">${_fmtPrimaryRate(r)}</td>
-        <td>${Utils.fmtDate(r.validFrom)}</td>
         <td style="color:${expired ? 'var(--color-expired-text)' : 'inherit'};font-weight:${expired?'700':'400'}">
           ${Utils.fmtDate(r.validTo)}
           ${expired ? '<span class="badge badge-expired" style="margin-left:4px">Expired</span>' : ''}
@@ -190,18 +187,6 @@ const AdminApp = (() => {
           <button class="btn btn-danger btn-sm" onclick="AdminApp.deleteRate('${Utils.esc(r.id)}')">Del</button>
         </td>
       </tr>`;
-  }
-
-  /** Primary rate display: use rateNeg45 for air if available, else rate field */
-  function _fmtPrimaryRate(r) {
-    if (r.type === 'air') {
-      const v = parseFloat(r.rateNeg45 ?? r.rateMin ?? r.ratePos45 ?? r.rate);
-      if (isNaN(v)) return '—';
-      return `${r.currency||'CNY'} ${v.toFixed(2)}/kg`;
-    }
-    const v = parseFloat(r.rate);
-    if (isNaN(v)) return '—';
-    return `${r.currency||'CNY'} ${v.toFixed(2)}/${r.unit||'unit'}`;
   }
 
   /** Format a single tier cell value */
@@ -444,7 +429,7 @@ const AdminApp = (() => {
     _renderTable();
 
     try {
-      await API.batchUpsert(_rates);
+      await API.upsertRate(rateObj);
       // Log the action
       await API.insertLog({
         action:   _editingId ? 'UPDATE' : 'INSERT',
