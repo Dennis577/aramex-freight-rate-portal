@@ -17,8 +17,4 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Redirect all requests to the same directory (SPA-like)
-[[redirects]]
-  from   = "/*"
-  to     = "/:splat"
-  status = 200
+# No catch-all redirect needed — this is a static multi-page site

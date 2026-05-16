@@ -14,12 +14,20 @@ mkdir -p dist/assets/js dist/assets/css dist/scripts
 echo "==> Copying static files..."
 cp index.html  dist/
 cp admin.html  dist/
-cp -r assets/css/ dist/assets/css/
+
+# Copy CSS files individually (avoid cp -r directory quirks on build hosts)
+for f in assets/css/*.css; do
+  fname=$(basename "$f")
+  cp "$f" "dist/assets/css/$fname"
+  echo "    copied css: $fname"
+done
+
 # Copy all JS except config.js (we generate it below)
 for f in assets/js/*.js; do
   fname=$(basename "$f")
   if [ "$fname" != "config.js" ] && [ "$fname" != "config.template.js" ]; then
     cp "$f" "dist/assets/js/$fname"
+    echo "    copied js: $fname"
   fi
 done
 

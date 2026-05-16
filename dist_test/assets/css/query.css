@@ -1,0 +1,312 @@
+/* ============================================================
+   FREIGHT RATE PORTAL — Query Page Styles (index.html)
+   ============================================================ */
+
+/* --- Page Layout --- */
+.query-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* --- Search Panel --- */
+.search-panel {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-6);
+}
+
+.search-panel .panel-title {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .search-grid {
+    grid-template-columns: repeat(4, 1fr);
+    align-items: flex-end;
+  }
+}
+
+/* Date valid as of row */
+.search-date-row {
+  margin-top: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.search-date-row label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.search-date-row .form-control {
+  max-width: 160px;
+}
+
+.search-date-row .btn-clear {
+  font-size: var(--font-size-xs);
+  padding: 8px 14px;
+  border: 1.5px solid var(--color-border);
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: all .15s ease;
+}
+
+.search-date-row .btn-clear:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-text-muted);
+}
+
+/* --- Results Section --- */
+.results-section {
+  flex: 1;
+  padding: var(--space-6) 0 var(--space-10);
+  max-width: var(--max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding: 0 var(--space-6);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.results-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.results-count strong {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* --- Rate Card (mobile layout) --- */
+.rate-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: all .2s ease;
+  overflow: hidden;
+}
+
+.rate-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--color-border-dark);
+}
+
+.rate-card.expired {
+  opacity: .5;
+}
+
+.rate-card-header {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface-2);
+}
+
+.rate-route {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.rate-route .arrow {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.rate-card-body {
+  padding: var(--space-4) var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3) var(--space-5);
+}
+
+@media (min-width: 480px) {
+  .rate-card-body {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.rate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rate-field-label {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.rate-field-value {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.rate-field-value.price {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.rate-card-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--color-surface-3);
+}
+
+.validity-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.validity-text.expiring-soon {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+/* --- Table view (larger screens) --- */
+@media (min-width: 900px) {
+  .rate-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--font-size-sm);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+  }
+
+  .rate-table thead {
+    background: var(--color-surface-3);
+  }
+
+  .rate-table th {
+    color: var(--color-text-secondary);
+    padding: 14px var(--space-4);
+    text-align: left;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 2px solid var(--color-border);
+    white-space: nowrap;
+  }
+
+  .rate-table td {
+    padding: 14px var(--space-4);
+    border-bottom: 1px solid var(--color-border-light);
+    vertical-align: middle;
+    color: var(--color-text-primary);
+  }
+
+  .rate-table tbody tr {
+    transition: background .15s ease;
+  }
+
+  .rate-table tbody tr:hover {
+    background: #fff8f8;
+  }
+
+  .rate-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .rate-table tr.expired td {
+    opacity: .5;
+    color: var(--color-text-muted);
+  }
+
+  .rate-table .td-price {
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: var(--font-size-md);
+  }
+
+  .rate-table .td-route {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .rate-table .td-badge {
+    display: inline-flex;
+  }
+}
+
+/* Mobile: hide table, show cards */
+.cards-view  { display: block; }
+.table-wrap  { display: none; }
+
+@media (min-width: 900px) {
+  .cards-view  { display: none; }
+  .table-wrap  { display: block; }
+}
+
+/* --- No results / disclaimer --- */
+.disclaimer {
+  margin-top: var(--space-8);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.7;
+}
+
+/* --- Last updated chip --- */
+.last-updated {
+  font-size: var(--font-size-xs);
+  color: rgba(255,255,255,.65);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
