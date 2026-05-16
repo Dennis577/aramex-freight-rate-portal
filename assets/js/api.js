@@ -63,7 +63,7 @@ const API = (() => {
    * @returns {Promise<Array>} array of rate objects (camelCase keys)
    */
   async function fetchRates() {
-    const res = await fetch(BASE + '/rates?select=*&order=updatedat.desc', {
+    const res = await fetch(BASE + '/rates?select=*&order=updated_at.desc', {
       headers: HEADERS_READ,
     });
     if (!res.ok) {
