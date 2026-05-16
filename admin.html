@@ -138,7 +138,7 @@
                 <th data-sort="destination">Destination <span class="sort-icon">⇅</span></th>
                 <th data-sort="carrier">Carrier <span class="sort-icon">⇅</span></th>
                 <th data-sort="commodity">Commodity <span class="sort-icon">⇅</span></th>
-                <th>Density</th>
+                <th>Agent</th>
                 <th>Min</th>
                 <th>≤45kg</th>
                 <th>>45kg</th>
@@ -364,16 +364,6 @@
               <input class="form-control" id="fMinChargeAir" type="number"
                      min="0" step="any" placeholder="Optional">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="fDensityRatio">Density Ratio (比重要求)</label>
-              <select class="form-control" id="fDensityRatio">
-                <option value="">— None —</option>
-                <option value="1:200">1:200</option>
-                <option value="1:300">1:300</option>
-                <option value="1:500">1:500</option>
-                <option value="1:600">1:600</option>
-              </select>
-            </div>
           </div>
         </div>
 
@@ -387,6 +377,16 @@
           <div class="form-group">
             <label class="form-label" for="fValidTo">Valid To</label>
             <input class="form-control" id="fValidTo" type="date">
+          </div>
+        </div>
+
+        <!-- Agent (internal only, not shown to customers) -->
+        <div class="form-section-title">Internal Info</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="fAgent">Agent</label>
+            <input class="form-control" id="fAgent" type="text"
+                   placeholder="e.g. John Smith">
           </div>
         </div>
 
@@ -549,16 +549,6 @@
                 <option value="HKD">HKD</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Density Ratio</label>
-              <select class="form-control" id="aiDensityRatio">
-                <option value="">— None —</option>
-                <option value="1:200">1:200</option>
-                <option value="1:300">1:300</option>
-                <option value="1:500">1:500</option>
-                <option value="1:600">1:600</option>
-              </select>
-            </div>
           </div>
 
           <div class="form-section-title" style="margin-top:12px;">Price Tiers (CNY)</div>
@@ -590,6 +580,10 @@
             <div class="form-group">
               <label class="form-label">Valid To</label>
               <input class="form-control" id="aiValidTo" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Agent</label>
+              <input class="form-control" id="aiAgent" type="text" placeholder="Internal agent">
             </div>
           </div>
           <div class="form-group full-width" style="margin-top:8px;">

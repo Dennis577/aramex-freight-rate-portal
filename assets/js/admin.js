@@ -161,9 +161,9 @@ const AdminApp = (() => {
         : `${r.currency||'CNY'} ${v.toFixed(2)} / ${r.unit||'teu'}`;
     }
 
-    // Density ratio display
-    const densityHtml = r.densityRatio
-      ? `<span class="density-badge">${r.densityRatio}</span>`
+    // Agent display (internal field, may be empty)
+    const agentDisplay = r.agent
+      ? `<span class="agent-badge">${Utils.esc(r.agent)}</span>`
       : '—';
 
     return `
@@ -176,7 +176,7 @@ const AdminApp = (() => {
         <td><strong>${Utils.esc(r.destination)}</strong></td>
         <td>${Utils.esc(r.carrier || '—')}</td>
         <td>${Utils.esc(r.commodity || 'General')}</td>
-        <td>${densityHtml}</td>
+        <td>${agentDisplay}</td>
         ${isAir ? tierKeys.map(k => `<td class="td-tier-cell">${_fmtTierCell(r, k)}</td>`).join('') : '<td>—</td>'.repeat(7)}
         <td style="color:${expired ? 'var(--color-expired-text)' : 'inherit'};font-weight:${expired?'700':'400'}">
           ${Utils.fmtDate(r.validTo)}
@@ -307,7 +307,7 @@ const AdminApp = (() => {
     f('fRatePos500') && (f('fRatePos500').value   = rate?.ratePos500  ?? '');
     f('fRatePos1000')&& (f('fRatePos1000').value  = rate?.ratePos1000 ?? '');
     f('fMinChargeAir')&&(f('fMinChargeAir').value = rate?.minCharge ?? '');
-    f('fDensityRatio')&&(_setSelect('fDensityRatio', rate?.densityRatio || ''));
+    f('fAgent')       && (f('fAgent').value      = rate?.agent    || '');
 
     // Show/hide pricing sections based on type
     _updatePricingSections();
@@ -386,8 +386,7 @@ const AdminApp = (() => {
       rateObj.minCharge = parseFloat(f('fMinChargeOcean')) || null;
       // Clear air-specific fields
       ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'].forEach(k => delete rateObj[k]);
-      // NOTE: densityRatio column not yet in DB — add it in Supabase first
-      // rateObj.densityRatio = null;
+      rateObj.agent    = f('fAgent') || null;
     } else {
       // Air: use rateNeg45 as primary rate field
       const parseTier = id => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; };
@@ -399,8 +398,7 @@ const AdminApp = (() => {
       rateObj.ratePos500 = parseTier('fRatePos500');
       rateObj.ratePos1000= parseTier('fRatePos1000');
       rateObj.minCharge  = parseTier('fMinChargeAir') || null;
-      // NOTE: densityRatio column not yet in DB — add it in Supabase first
-      // rateObj.densityRatio = f('fDensityRatio') || null;
+      rateObj.agent      = f('fAgent') || null;
       rateObj.unit       = 'kg';
       // Use rateNeg45 as the "main" rate field for ocean compatibility
       rateObj.rate       = rateObj.rateNeg45 ?? rateObj.rateMin ?? 0;
@@ -881,7 +879,7 @@ const AdminApp = (() => {
       ratepos500:  ['+500', 'pos500', '>500', '>500kg', '+500kg'],
       ratepos1000: ['+1000', 'pos1000', '>1000', '>1000kg', '+1000kg'],
       mincharge:   ['minchg', 'min charge', '最低收费'],
-      density:     ['density', '比重', 'ratio'],
+      agent:       ['agent'],
       currency:    ['currency', '币种', 'curr'],
       validfrom:   ['valid from', 'validfrom', '起始', 'validfrom'],
       validto:     ['valid to', 'validto', '截止', 'validto'],
@@ -919,7 +917,7 @@ const AdminApp = (() => {
         ratePos500:   colIndex.ratepos500   != null ? parseFloat(cells[colIndex.ratepos500]?.replace(/,/g,'')) : null,
         ratePos1000:  colIndex.ratepos1000  != null ? parseFloat(cells[colIndex.ratepos1000]?.replace(/,/g,'')) : null,
         minCharge:    colIndex.mincharge    != null ? parseFloat(cells[colIndex.mincharge]?.replace(/,/g,'')) : null,
-        densityRatio: colIndex.density      != null ? cells[colIndex.density]        : '',
+        agent:        colIndex.agent        != null ? cells[colIndex.agent]        : '',
         currency:     colIndex.currency     != null ? cells[colIndex.currency]       : 'CNY',
         validFrom:    colIndex.validfrom    != null ? cells[colIndex.validfrom]      : '',
         validTo:      colIndex.validto      != null ? cells[colIndex.validto]        : '',
@@ -949,9 +947,9 @@ const AdminApp = (() => {
     const validRows   = rows.filter(r => r._valid);
     const invalidRows = rows.filter(r => !r._valid);
 
-    const headers = ['Origin','Destination','Carrier','Min','≤45kg','>45kg','>100kg','>300kg','>500kg','>1000kg','Density'];
+    const headers = ['Origin','Destination','Carrier','Min','≤45kg','>45kg','>100kg','>300kg','>500kg','>1000kg','Agent'];
     const colKeys = ['origin','destination','carrier','rateMin','rateNeg45','ratePos45',
-                     'ratePos100','ratePos300','ratePos500','ratePos1000','densityRatio'];
+                     'ratePos100','ratePos300','ratePos500','ratePos1000','agent'];
 
     let html = `<table class="ai-text-preview-table">
       <thead><tr><th>#</th>${headers.map(h => `<th>${Utils.esc(h)}</th>`).join('')}</tr></thead>
@@ -1024,8 +1022,7 @@ const AdminApp = (() => {
       ratePos500:   r.ratePos500,
       ratePos1000:  r.ratePos1000,
       minCharge:    r.minCharge,
-      // NOTE: densityRatio column not yet in DB
-      // densityRatio: r.densityRatio || null,
+      agent:        r.agent        || null,
       validFrom:    r.validFrom || null,
       validTo:      r.validTo || null,
       remark:      `Imported from text paste (${new Date().toLocaleDateString()})`,
@@ -1111,7 +1108,7 @@ const AdminApp = (() => {
 
   /**
    * Parse OCR text to extract rate table data.
-   * Looks for common patterns: airport codes, numbers, density ratios.
+   * Looks for common patterns: airport codes, numbers.
    */
   function _parseOcrText(text) {
     const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
@@ -1119,7 +1116,6 @@ const AdminApp = (() => {
     const AIRLINE  = /([A-Z]{2,6})(?:\s|$)/i;
     const NUMBER   = /[\d,]+\.?\d*/;
     const DECIMAL  = /(\d+\.?\d*)/;
-    const DENSITY  = /(?:density|ratio|比重)[:\s]*1?\s*:\s*(\d+)/i;
     const TIER_PATTERNS = [
       /([\d,]+\.?\d*)\s*(?:min|minimum|最低)[\s:]*([\d,]+\.?\d*)?/i,
       /([\d,]+\.?\d*)\s*(?:-?45|≤?\s*45)[\s:]*([\d,]+\.?\d*)?/i,
@@ -1130,19 +1126,13 @@ const AdminApp = (() => {
       /([\d,]+\.?\d*)\s*(?:\+?\s*1000|>\s*1000)[\s:]*([\d,]+\.?\d*)?/i,
     ];
 
-    let origin = '', destination = '', carrier = '', densityRatio = '';
+    let origin = '', destination = '', carrier = '', agent = '';
     const tiers = { min: null, neg45: null, pos45: null, pos100: null, pos300: null, pos500: null, pos1000: null };
 
     // Try to find route
     for (const line of lines) {
       const m = line.match(AIRPORTS);
       if (m && !origin) { origin = m[1]; destination = m[2]; }
-    }
-
-    // Try to find density ratio
-    for (const line of lines) {
-      const m = line.match(DENSITY);
-      if (m) { densityRatio = '1:' + m[1]; break; }
     }
 
     // Try to find carrier
@@ -1174,7 +1164,7 @@ const AdminApp = (() => {
       }
     }
 
-    return { origin, destination, carrier, densityRatio, tiers };
+    return { origin, destination, carrier, agent, tiers };
   }
 
   function _populateAiForm(parsed) {
@@ -1182,8 +1172,7 @@ const AdminApp = (() => {
     if (el('aiOrigin'))    el('aiOrigin').value    = parsed.origin    || '';
     if (el('aiDest'))      el('aiDest').value       = parsed.destination|| '';
     if (el('aiCarrier'))   el('aiCarrier').value    = parsed.carrier   || '';
-    if (el('aiDensityRatio') && parsed.densityRatio)
-      _setSelect('aiDensityRatio', parsed.densityRatio);
+    if (el('aiAgent'))     el('aiAgent').value      = parsed.agent      || '';
     if (el('aiRateMin'))   el('aiRateMin').value    = _n(parsed.tiers.min)    || '';
     if (el('aiRateNeg45')) el('aiRateNeg45').value  = _n(parsed.tiers.neg45)  || '';
     if (el('aiRatePos45')) el('aiRatePos45').value  = _n(parsed.tiers.pos45)  || '';
@@ -1230,8 +1219,7 @@ const AdminApp = (() => {
       ratePos500:   tiers.pos500 ? parseFloat(tiers.pos500) : null,
       ratePos1000:  tiers.pos1000? parseFloat(tiers.pos1000): null,
       minCharge:    _n(parseFloat(f('aiMinCharge'))) ? parseFloat(f('aiMinCharge')) : null,
-      // NOTE: densityRatio column not yet in DB
-      // densityRatio: f('aiDensityRatio') || null,
+      agent:        f('aiAgent') || null,
       validFrom:    f('aiValidFrom') || null,
       validTo:      f('aiValidTo')   || null,
       remark:       f('aiRemark')    || 'Imported from AI scan',
