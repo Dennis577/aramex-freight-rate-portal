@@ -41,7 +41,6 @@ cat > dist/assets/js/config.js << JSEOF
 const CONFIG = {
   SUPABASE_URL:         '${SUPABASE_URL}',
   SUPABASE_ANON_KEY:    '${SUPABASE_ANON_KEY}',
-  SUPABASE_SERVICE_KEY: '${SUPABASE_SERVICE_KEY}',
   ADMIN_PASSWORD_HASH:  '${ADMIN_PASSWORD_HASH}',
   SITE_NAME:            'Freight Rate Portal',
   COMPANY_NAME:         'Aramex',

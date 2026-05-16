@@ -16,15 +16,15 @@ const API = (() => {
     'Accept': 'application/json',
   };
   const HEADERS_WRITE = {
-    'apikey': CONFIG.SUPABASE_SERVICE_KEY,
-    'Authorization': 'Bearer ' + CONFIG.SUPABASE_SERVICE_KEY,
+    'apikey': CONFIG.SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY,
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Prefer': 'return=representation',
   };
   const HEADERS_WRITE_SILENT = {
-    'apikey': CONFIG.SUPABASE_SERVICE_KEY,
-    'Authorization': 'Bearer ' + CONFIG.SUPABASE_SERVICE_KEY,
+    'apikey': CONFIG.SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY,
     'Content-Type': 'application/json',
     'Prefer': 'return=minimal',
   };
