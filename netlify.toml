@@ -4,9 +4,9 @@
 # The build command injects secrets from environment variables.
 #
 # Required Netlify Environment Variables (set in Netlify UI):
-#   SUPABASE_URL          — Supabase project URL
-#   SUPABASE_ANON_KEY     — Supabase anon (public) key
-#   ADMIN_PASSWORD_HASH   — SHA-256 hex of admin password
+#   SUPABASE_URL      — Supabase project URL
+#   SUPABASE_ANON_KEY — Supabase anon (public) key
+# Note: Multi-account passwords are hardcoded in inject-env.sh (SHA-256 hashes, not secrets)
 # ─────────────────────────────────────────────────────────
 
 [build]
