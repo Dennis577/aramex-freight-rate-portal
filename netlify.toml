@@ -4,9 +4,8 @@
 # The build command injects secrets from environment variables.
 #
 # Required Netlify Environment Variables (set in Netlify UI):
-#   JSONBIN_BIN_ID        — Your JSONbin Bin ID
-#   JSONBIN_READ_KEY      — JSONbin read/master key (public read)
-#   JSONBIN_WRITE_KEY     — JSONbin master key (admin write)
+#   SUPABASE_URL          — Supabase project URL
+#   SUPABASE_ANON_KEY     — Supabase anon (public) key
 #   ADMIN_PASSWORD_HASH   — SHA-256 hex of admin password
 # ─────────────────────────────────────────────────────────
 
@@ -17,4 +16,23 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# No catch-all redirect needed — this is a static multi-page site
+# ── Cache Control Headers ─────────────────────────────────
+# HTML files: never cache (always fresh)
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+# JS files: versioned by build — short cache OK but disable for safety
+[[headers]]
+  for = "/assets/js/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# CSS files: same
+[[headers]]
+  for = "/assets/css/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
