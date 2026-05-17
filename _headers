@@ -1,0 +1,20 @@
+# Cloudflare Pages — Custom Headers
+# Equivalent to netlify.toml headers section.
+# This file must be placed in the build output directory (dist/).
+# Syntax: path pattern on first line, then indented header lines.
+#
+# Docs: https://developers.cloudflare.com/pages/configuration/headers/
+
+# ── HTML files: never cache (always fresh) ──────────────────────
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+# ── JS files: no-cache to pick up new builds immediately ───────
+/assets/js/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# ── CSS files: same ────────────────────────────────────────────
+/assets/css/*
+  Cache-Control: no-cache, no-store, must-revalidate

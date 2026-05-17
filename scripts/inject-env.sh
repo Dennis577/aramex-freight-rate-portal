@@ -34,6 +34,12 @@ for f in assets/css/*.css; do
   echo "    copied css: $fname"
 done
 
+# Copy _headers for Cloudflare Pages (cache-control headers)
+if [ -f "_headers" ]; then
+  cp "_headers" "dist/_headers"
+  echo "    copied _headers (Cloudflare Pages cache rules)"
+fi
+
 # Copy all JS except config.js (we generate it below)
 for f in assets/js/*.js; do
   fname=$(basename "$f")
