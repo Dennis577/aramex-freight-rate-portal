@@ -335,6 +335,7 @@ const QueryApp = (() => {
 
     tbody.innerHTML = rates.map(r => {
       const days     = Utils.daysUntilExpiry(r);
+      const expiring = Utils.expiringSoon(r, 7);
       const badge    = isAir
         ? `<span class="badge badge-air">Air</span>`
         : `<span class="badge badge-ocean">Ocean</span>`;
