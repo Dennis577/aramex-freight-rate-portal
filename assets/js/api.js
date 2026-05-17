@@ -199,7 +199,7 @@ const API = (() => {
       old_data:  log.oldData     || null,
       new_data:  log.newData     || null,
       summary:   log.summary     || '',
-      operator:  'admin',
+      operator:  typeof Auth !== 'undefined' ? Auth.getUsername() : 'admin',
     };
     const res = await fetch(BASE + '/rate_logs', {
       method: 'POST',
@@ -217,13 +217,14 @@ const API = (() => {
    */
   async function insertLogBatch(logs) {
     if (!logs || !logs.length) return;
+    const operator = typeof Auth !== 'undefined' ? Auth.getUsername() : 'admin';
     const payload = logs.map(log => ({
       action:    log.action,
       target_id: log.targetId   || null,
       old_data:  log.oldData     || null,
       new_data:  log.newData     || null,
       summary:   log.summary     || '',
-      operator:  'admin',
+      operator:  operator,
     }));
     const res = await fetch(BASE + '/rate_logs', {
       method: 'POST',

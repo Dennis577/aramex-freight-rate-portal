@@ -31,9 +31,18 @@
     <div class="login-card-body">
       <form id="loginForm" novalidate>
         <div class="form-group">
+          <label class="form-label" for="loginAccount">Account</label>
+          <select class="form-control" id="loginAccount" required>
+            <option value="admin">Admin (Full Access)</option>
+            <option value="PVG_Pricing">PVG_Pricing (Rates Only)</option>
+            <option value="PEK_Pricing">PEK_Pricing (Rates Only)</option>
+            <option value="CAN_Pricing">CAN_Pricing (Rates Only)</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label" for="loginPassword">Password</label>
           <input class="form-control" id="loginPassword" type="password"
-                 placeholder="Enter admin password"
+                 placeholder="Enter password"
                  autocomplete="current-password" required>
         </div>
         <p id="loginError" class="login-error"></p>
@@ -55,7 +64,7 @@
     <div class="logo">
       <div class="logo-icon">⚙</div>
       <span>Freight Rate Portal</span>
-      <span class="admin-tag">ADMIN</span>
+      <span class="admin-tag" id="adminBadge">ADMIN</span>
     </div>
     <div class="header-right">
       <a href="index.html" class="btn btn-ghost btn-sm" target="_blank">
@@ -80,7 +89,7 @@
       <!-- Tab Navigation -->
       <div class="admin-tabs" style="margin-bottom:16px;">
         <button class="admin-tab active" data-admin-tab="rates">📋 Rates</button>
-        <button class="admin-tab" data-admin-tab="settings">⚙ Settings</button>
+        <button class="admin-tab" id="tabBtnSettings" data-admin-tab="settings">⚙ Settings</button>
         <button class="admin-tab" data-admin-tab="logs">📜 Logs</button>
       </div>
 
@@ -163,7 +172,7 @@
       <!-- ══ SETTINGS TAB ═══════════════════════════════════════ -->
       <div id="tabSettings" class="admin-tab-content hidden">
         <div class="settings-card">
-          <div class="settings-card-header">⚙ Global Settings</div>
+          <div class="settings-card-header">⚙ Global Settings <span style="font-size:12px;color:var(--color-text-muted);font-weight:400;">(Admin only)</span></div>
           <div class="settings-card-body">
 
             <!-- Exchange Rate -->
@@ -314,11 +323,6 @@
           <div class="form-section-title">Ocean Freight Pricing</div>
           <div class="form-grid">
             <div class="form-group">
-              <label class="form-label" for="fRateOcean">Rate *</label>
-              <input class="form-control" id="fRateOcean" type="number"
-                     min="0" step="any" placeholder="0.00">
-            </div>
-            <div class="form-group">
               <label class="form-label" for="fUnitOcean">Unit</label>
               <select class="form-control" id="fUnitOcean">
                 <option value="teu">TEU</option>
@@ -421,6 +425,9 @@
         <button id="btnDownloadTemplate" class="btn btn-outline btn-sm">
           ⬇ Download Template (CSV)
         </button>
+        <p style="margin-top:8px;font-size:12px;color:var(--color-text-muted)">
+          💡 Air rates: enter at least one tier price column. Ocean rates: enter MinCharge + choose a unit.
+        </p>
       </div>
       <div class="import-drop-zone" id="importDropZone">
         <div class="drop-icon">📄</div>
@@ -435,8 +442,8 @@
             <thead>
               <tr>
                 <th>#</th><th>Type</th><th>Origin</th><th>Destination</th>
-                <th>Carrier</th><th>Rate</th><th>Currency</th><th>Unit</th>
-                <th>Valid From</th><th>Valid To</th>
+                <th>Carrier</th><th>Currency</th><th>Unit</th>
+                <th>Valid From</th><th>Valid To</th><th>Remark</th>
               </tr>
             </thead>
             <tbody id="importPreviewBody"></tbody>
@@ -653,27 +660,30 @@
     if (Auth.isLoggedIn()) {
       loginView.classList.add('hidden');
       adminView.classList.remove('hidden');
+      _applyRolePermissions();
       await AdminApp.init();
     } else {
       loginView.classList.remove('hidden');
       adminView.classList.add('hidden');
 
-      const form  = document.getElementById('loginForm');
-      const pwEl  = document.getElementById('loginPassword');
-      const errEl = document.getElementById('loginError');
-      const btn   = document.getElementById('btnLogin');
+      const form   = document.getElementById('loginForm');
+      const acctEl = document.getElementById('loginAccount');
+      const pwEl   = document.getElementById('loginPassword');
+      const errEl  = document.getElementById('loginError');
+      const btn    = document.getElementById('btnLogin');
 
       form.addEventListener('submit', async e => {
         e.preventDefault();
         errEl.textContent = '';
         btn.disabled = true;
         btn.textContent = 'Signing in…';
-        const ok = await Auth.login(pwEl.value);
+        const ok = await Auth.login(acctEl.value, pwEl.value);
         btn.disabled = false;
         btn.textContent = 'Sign In';
         if (ok) {
           loginView.classList.add('hidden');
           adminView.classList.remove('hidden');
+          _applyRolePermissions();
           await AdminApp.init();
         } else {
           errEl.textContent = 'Incorrect password. Please try again.';
@@ -683,6 +693,22 @@
       });
     }
   })();
+
+  // ── Apply role-based UI restrictions ─────────────────
+  function _applyRolePermissions() {
+    const isAdmin = Auth.isAdmin();
+    const username = Auth.getUsername();
+
+    // Update badge
+    const badge = document.getElementById('adminBadge');
+    if (badge) badge.textContent = username;
+
+    // Hide Settings tab for non-admin users
+    const settingsTabBtn = document.getElementById('tabBtnSettings');
+    if (settingsTabBtn) {
+      settingsTabBtn.style.display = isAdmin ? '' : 'none';
+    }
+  }
 </script>
 
 </body>

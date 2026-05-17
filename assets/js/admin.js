@@ -3,6 +3,12 @@
  *
  * Depends on: CONFIG, API, Auth, Utils, Tesseract (CDN)
  * Loaded by: admin.html (after auth check)
+ *
+ * Changes (2026-05-17):
+ *   - Removed `rate` column (replaced by tier fields)
+ *   - Added `operator` column (auto-set to logged-in username)
+ *   - Role-based access: non-admin cannot access Settings tab
+ *   - Fixed bulk import validation (air: requires at least one tier; ocean: requires unit)
  */
 
 const AdminApp = (() => {
@@ -147,6 +153,7 @@ const AdminApp = (() => {
     const tierKeys   = ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'];
 
     // Price tiers display — ALWAYS show all 7 cells for air freight
+    // Ocean freight: show minCharge + unit
     let priceTiersHtml = '—';
     if (isAir) {
       const tierLabels = ['Min','≤45','>45','>100','>300','>500','>1000'];
@@ -156,7 +163,8 @@ const AdminApp = (() => {
         return `<span class="tier-cell" title="${tierLabels[i]}">${formatted}</span>`;
       }).join('');
     } else {
-      const v = parseFloat(r.rate);
+      // Ocean: show minCharge as the price indicator
+      const v = parseFloat(r.minCharge);
       priceTiersHtml = isNaN(v) ? '—'
         : `${r.currency||'CNY'} ${v.toFixed(2)} / ${r.unit||'teu'}`;
     }
@@ -294,7 +302,6 @@ const AdminApp = (() => {
     f('fRemark')     && (f('fRemark').value       = rate?.remark      || '');
 
     // Ocean fields
-    f('fRateOcean')  && (f('fRateOcean').value    = rate?.rate        ?? '');
     f('fUnitOcean')  && (f('fUnitOcean').value    = rate?.unit        || 'teu');
     f('fMinChargeOcean') && (f('fMinChargeOcean').value = rate?.minCharge ?? '');
 
@@ -352,6 +359,7 @@ const AdminApp = (() => {
     const f = id => document.getElementById(id)?.value?.trim();
     const type  = f('fType') || 'air';
     const now   = new Date().toISOString();
+    const operator = Auth.getUsername();
 
     let rateObj = {};
     let oldRate = null;
@@ -377,18 +385,16 @@ const AdminApp = (() => {
     rateObj.validTo     = f('fValidTo')   || null;
     rateObj.remark      = f('fRemark')    || '';
     rateObj.updatedAt   = now;
+    rateObj.operator    = operator;
 
     if (type === 'ocean') {
-      const rateVal = parseFloat(f('fRateOcean'));
-      if (isNaN(rateVal)) { alert('Please enter a valid ocean rate.'); return; }
-      rateObj.rate     = rateVal;
-      rateObj.unit     = f('fUnitOcean') || 'teu';
+      rateObj.unit      = f('fUnitOcean') || 'teu';
       rateObj.minCharge = parseFloat(f('fMinChargeOcean')) || null;
       // Clear air-specific fields
       ['rateMin','rateNeg45','ratePos45','ratePos100','ratePos300','ratePos500','ratePos1000'].forEach(k => delete rateObj[k]);
       rateObj.agent    = f('fAgent') || null;
     } else {
-      // Air: use rateNeg45 as primary rate field
+      // Air: use tier price fields
       const parseTier = id => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; };
       rateObj.rateMin    = parseTier('fRateMin');
       rateObj.rateNeg45  = parseTier('fRateNeg45');
@@ -400,8 +406,8 @@ const AdminApp = (() => {
       rateObj.minCharge  = parseTier('fMinChargeAir') || null;
       rateObj.agent      = f('fAgent') || null;
       rateObj.unit       = 'kg';
-      // Use rateNeg45 as the "main" rate field for ocean compatibility
-      rateObj.rate       = rateObj.rateNeg45 ?? rateObj.rateMin ?? 0;
+      // Clear ocean-specific field
+      delete rateObj.rate; // removed 2026-05-17
     }
 
     // Validate: at least one price tier must be filled for air
@@ -412,9 +418,8 @@ const AdminApp = (() => {
       if (!hasTier) {
         alert('Please enter at least one price tier for air freight.'); return;
       }
-    } else {
-      if (!rateObj.rate) { alert('Please enter a valid ocean rate.'); return; }
     }
+    // Ocean: no price validation (minCharge is optional)
 
     // Write to state
     if (_editingId) {
@@ -548,6 +553,24 @@ const AdminApp = (() => {
     reader.readAsBinaryString(file);
   }
 
+  /**
+   * Check if a row has at least one air tier price OR is a valid ocean entry
+   * @param {Object} r — normalized lowercase-keyed row
+   */
+  function _rowHasPrice(r) {
+    if (r.type === 'ocean') {
+      // Ocean: minCharge is optional, so always valid if type=ocean
+      return true;
+    }
+    // Air: require at least one tier
+    const tierVals = [
+      parseFloat(r.ratemin), parseFloat(r.rateneg45), parseFloat(r.ratepos45),
+      parseFloat(r.ratepos100), parseFloat(r.ratepos300),
+      parseFloat(r.ratepos500), parseFloat(r.ratepos1000),
+    ];
+    return tierVals.some(v => !isNaN(v));
+  }
+
   function _previewImport(rows) {
     _importRows = rows.map(row => {
       const norm = {};
@@ -560,8 +583,8 @@ const AdminApp = (() => {
     if (!previewTbody) return;
 
     let okCount = 0, errCount = 0;
-    previewTbody.innerHTML = _importRows.map((r, i) => {
-      const hasError = !r.origin || !r.destination || isNaN(parseFloat(r.rate));
+    previewTbody.innerHTML = _importRows.slice(0, 20).map((r, i) => {
+      const hasError = !r.origin || !r.destination || !_rowHasPrice(r);
       if (hasError) errCount++; else okCount++;
       return `
         <tr class="${hasError ? 'row-error' : ''}">
@@ -570,11 +593,11 @@ const AdminApp = (() => {
           <td>${Utils.esc(r.origin || '—')}</td>
           <td>${Utils.esc(r.destination || '—')}</td>
           <td>${Utils.esc(r.carrier || '—')}</td>
-          <td>${Utils.esc(r.rate)}</td>
           <td>${Utils.esc(r.currency || 'CNY')}</td>
           <td>${Utils.esc(r.unit || 'kg')}</td>
           <td>${Utils.esc(r.validfrom || '—')}</td>
           <td>${Utils.esc(r.validto || '—')}</td>
+          <td>${Utils.esc(r.remark || '—')}</td>
         </tr>`;
     }).join('');
 
@@ -589,25 +612,41 @@ const AdminApp = (() => {
   }
 
   async function _confirmImport() {
-    const now = new Date().toISOString();
-    const newRates = _importRows
-      .filter(r => r.origin && r.destination && !isNaN(parseFloat(r.rate)))
-      .map(r => ({
-        id:          Utils.uuid(),
-        type:        (r.type || 'air').toLowerCase(),
-        origin:      String(r.origin).toUpperCase().trim(),
-        destination: String(r.destination).toUpperCase().trim(),
-        carrier:     String(r.carrier || '').toUpperCase().trim(),
-        commodity:   String(r.commodity || '').trim(),
-        rate:        parseFloat(r.rate),
-        currency:    String(r.currency || 'CNY').toUpperCase().trim(),
-        unit:        String(r.unit || 'kg').toLowerCase().trim(),
-        minCharge:   parseFloat(r.mincharge || r.minCharge) || null,
-        validFrom:   r.validfrom || r.validFrom || null,
-        validTo:     r.validto   || r.validTo   || null,
-        remark:      String(r.remark || '').trim(),
-        updatedAt:   now,
-      }));
+    const now      = new Date().toISOString();
+    const operator = Auth.getUsername();
+    const validRows = _importRows.filter(r => r.origin && r.destination && _rowHasPrice(r));
+
+    const newRates = validRows.map(r => {
+      const isAir = (r.type || 'air').toLowerCase() === 'air';
+      const rateObj = {
+        id:           Utils.uuid(),
+        type:         (r.type || 'air').toLowerCase(),
+        origin:       String(r.origin).toUpperCase().trim(),
+        destination:  String(r.destination).toUpperCase().trim(),
+        carrier:      String(r.carrier || '').toUpperCase().trim(),
+        commodity:    String(r.commodity || '').trim(),
+        currency:     String(r.currency || 'CNY').toUpperCase().trim(),
+        unit:         isAir ? 'kg' : String(r.unit || 'teu').toLowerCase().trim(),
+        minCharge:    _parseNum(r.mincharge || r.minCharge),
+        validFrom:    r.validfrom || r.validFrom || null,
+        validTo:      r.validto   || r.validTo   || null,
+        remark:       String(r.remark || '').trim(),
+        updatedAt:    now,
+        operator:     operator,
+      };
+
+      if (isAir) {
+        rateObj.rateMin    = _parseNum(r.ratemin);
+        rateObj.rateNeg45  = _parseNum(r.rateneg45);
+        rateObj.ratePos45  = _parseNum(r.ratepos45);
+        rateObj.ratePos100 = _parseNum(r.ratepos100);
+        rateObj.ratePos300 = _parseNum(r.ratepos300);
+        rateObj.ratePos500 = _parseNum(r.ratepos500);
+        rateObj.ratePos1000= _parseNum(r.ratepos1000);
+      }
+
+      return rateObj;
+    });
 
     _rates.push(...newRates);
     _closeImportModal();
@@ -629,6 +668,12 @@ const AdminApp = (() => {
     }
   }
 
+  function _parseNum(v) {
+    if (v == null || v === '') return null;
+    const n = parseFloat(String(v).replace(/,/g, ''));
+    return isNaN(n) ? null : n;
+  }
+
   // ── Settings ──────────────────────────────────────────────────
   function _bindSettings() {
     // Load current values into form
@@ -636,6 +681,7 @@ const AdminApp = (() => {
 
     // Save Exchange Rate button
     document.getElementById('btnSaveExchangeRate')?.addEventListener('click', async () => {
+      if (!Auth.isAdmin()) { alert('Only Admin can modify settings.'); return; }
       const val = parseFloat(document.getElementById('sExchangeRate')?.value);
       if (isNaN(val) || val <= 0) {
         document.getElementById('feedbackExchange').innerHTML =
@@ -660,6 +706,7 @@ const AdminApp = (() => {
 
     // Save Markup button
     document.getElementById('btnSaveMarkup')?.addEventListener('click', async () => {
+      if (!Auth.isAdmin()) { alert('Only Admin can modify settings.'); return; }
       const val = parseFloat(document.getElementById('sMarkupPercent')?.value);
       if (isNaN(val) || val < 0) {
         document.getElementById('feedbackMarkup').innerHTML =
@@ -726,7 +773,7 @@ const AdminApp = (() => {
         <td>${log.createdAt ? Utils.fmtDate(log.createdAt.slice(0, 10)) + ' ' + (log.createdAt.slice(11, 16) || '') : '—'}</td>
         <td>${actionLabel[log.action] || log.action}</td>
         <td><strong>${Utils.esc(log.summary || '—')}</strong></td>
-        <td>${Utils.esc(log.operator || 'admin')}</td>
+        <td>${Utils.esc(log.operator || '—')}</td>
         <td>
           <button class="btn btn-ghost btn-xs" onclick="AdminApp.showLogDetail('${Utils.esc(log.id)}')">
             View
@@ -763,12 +810,9 @@ const AdminApp = (() => {
     document.getElementById('aiProgressBar')?.style.setProperty('width', '0%');
     const fi = document.getElementById('aiFileInput');
     if (fi) fi.value = '';
-    // Clear text paste
     const ta = document.getElementById('aiPasteArea');
     if (ta) ta.value = '';
-    // Switch back to image tab
     _switchAiTab('image');
-    // Clear AI form fields
     ['aiOrigin','aiDest','aiCarrier','aiCommodity','aiRateMin','aiRateNeg45',
      'aiRatePos45','aiRatePos100','aiRatePos300','aiRatePos500',
      'aiRatePos1000','aiMinCharge','aiRemark'].forEach(id => {
@@ -793,7 +837,6 @@ const AdminApp = (() => {
       if (e.target === document.getElementById('aiScanModal')) _closeAiScanModal();
     });
 
-    // File upload
     const dropZone = document.getElementById('aiDropZone');
     const fileInput = document.getElementById('aiFileInput');
     dropZone?.addEventListener('click', () => fileInput?.click());
@@ -806,7 +849,6 @@ const AdminApp = (() => {
       if (e.dataTransfer.files[0]) _handleAiFile(e.dataTransfer.files[0]);
     });
 
-    // Paste from clipboard
     document.addEventListener('paste', e => {
       if (!document.getElementById('aiScanModal')?.classList.contains('hidden')) {
         const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
@@ -814,17 +856,11 @@ const AdminApp = (() => {
       }
     });
 
-    // Scan button
     document.getElementById('btnAiScanStart')?.addEventListener('click', _runOcr);
-
-    // Confirm button (image OCR path)
     document.getElementById('btnAiScanConfirm')?.addEventListener('click', _confirmAiScan);
-
-    // Text paste import
     document.getElementById('btnAiTextConfirm')?.addEventListener('click', _confirmTextImport);
   }
 
-  // ── AI Scan: Tab Switching (Image vs Text) ───────────────
   function _switchAiTab(tab) {
     const imageTab = document.getElementById('aiImageTab');
     const textTab  = document.getElementById('aiTextTab');
@@ -843,8 +879,6 @@ const AdminApp = (() => {
     }
   }
 
-  // ── Text Paste Parsing ────────────────────────────────────
-  /** Parse pasted table text into structured row objects */
   function _parsePastedText() {
     const raw = document.getElementById('aiPasteArea')?.value?.trim();
     if (!raw) { alert('Please paste some data first.'); return; }
@@ -852,18 +886,13 @@ const AdminApp = (() => {
     const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
     if (lines.length < 1) { alert('No data found.'); return; }
 
-    // Detect delimiter: tab, pipe, comma, multiple spaces
     const SEP_PATTERNS = [/\t/, /\s*\|\s*/, /,/];
     let separator = null;
     for (const pat of SEP_PATTERNS) {
       if (lines[0].match(pat)) { separator = pat; break; }
     }
-    if (!separator) {
-      // Fall back: split by 2+ spaces
-      separator = /\s{2,}/;
-    }
+    if (!separator) separator = /\s{2,}/;
 
-    // Parse header row
     const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
     const FIELD_MAP = {
       origin:      ['origin', 'ori', 'from', 'orig'],
@@ -881,11 +910,10 @@ const AdminApp = (() => {
       mincharge:   ['minchg', 'min charge', '最低收费'],
       agent:       ['agent'],
       currency:    ['currency', '币种', 'curr'],
-      validfrom:   ['valid from', 'validfrom', '起始', 'validfrom'],
-      validto:     ['valid to', 'validto', '截止', 'validto'],
+      validfrom:   ['valid from', 'validfrom', '起始'],
+      validto:     ['valid to', 'validto', '截止'],
     };
 
-    // Find column indices for each field
     const colIndex = {};
     headers.forEach((h, i) => {
       for (const [field, aliases] of Object.entries(FIELD_MAP)) {
@@ -895,11 +923,11 @@ const AdminApp = (() => {
       }
     });
 
-    // Parse data rows
+    const operator = Auth.getUsername();
     const parsedRows = [];
     for (let i = 1; i < lines.length; i++) {
       const cells = lines[i].split(separator).map(c => c.trim());
-      if (!cells.some(c => c)) continue; // skip empty rows
+      if (!cells.some(c => c)) continue;
 
       const row = {
         _line: i + 1,
@@ -922,9 +950,9 @@ const AdminApp = (() => {
         validFrom:    colIndex.validfrom    != null ? cells[colIndex.validfrom]      : '',
         validTo:      colIndex.validto      != null ? cells[colIndex.validto]        : '',
         remark:       '',
+        _operator:    operator,
       };
 
-      // Validate: need origin + destination + at least one price
       const hasPrice = [row.rateMin, row.rateNeg45, row.ratePos45, row.ratePos100,
                         row.ratePos300, row.ratePos500, row.ratePos1000].some(v => !isNaN(v));
       if (!row.origin || !row.destination) row._valid = false;
@@ -934,7 +962,6 @@ const AdminApp = (() => {
 
     if (!parsedRows.length) { alert('Could not parse any rows. Check the format.'); return; }
 
-    // Store for editing
     _importRows = parsedRows;
     _renderTextPreview(parsedRows);
   }
@@ -983,7 +1010,6 @@ const AdminApp = (() => {
     document.getElementById('btnAiTextConfirm')?.classList.remove('hidden');
     document.getElementById('btnAiScanConfirm')?.classList.add('hidden');
 
-    // Wire up inline editing
     wrap.querySelectorAll('.editable-cell').forEach(cell => {
       cell.addEventListener('blur', () => {
         const rowIdx = parseInt(cell.dataset.row);
@@ -1005,6 +1031,7 @@ const AdminApp = (() => {
     if (!validRows.length) { alert('No valid rows to import.'); return; }
 
     const now = new Date().toISOString();
+    const operator = Auth.getUsername();
     const newRates = validRows.map(r => ({
       id:           Utils.uuid(),
       type:         'air',
@@ -1025,9 +1052,9 @@ const AdminApp = (() => {
       agent:        r.agent        || null,
       validFrom:    r.validFrom || null,
       validTo:      r.validTo || null,
-      remark:      `Imported from text paste (${new Date().toLocaleDateString()})`,
+      remark:       `Imported from text paste (${new Date().toLocaleDateString()})`,
       updatedAt:    now,
-      rate:         r.rateNeg45 ?? r.rateMin ?? 0,
+      operator:     r._operator || operator,
     }));
 
     _rates.push(...newRates);
@@ -1036,7 +1063,7 @@ const AdminApp = (() => {
     _renderTable();
 
     try {
-      await API.batchUpsert(_rates);
+      await API.batchUpsert(newRates);
       await API.insertLog({
         action:   'BATCH_IMPORT',
         targetId: null,
@@ -1091,7 +1118,6 @@ const AdminApp = (() => {
       if (progressText) progressText.textContent = 'Parsing price data…';
       if (progressBar)  progressBar.style.width = '100%';
 
-      // Parse the recognized text
       const parsed = _parseOcrText(text);
       _populateAiForm(parsed);
 
@@ -1106,16 +1132,10 @@ const AdminApp = (() => {
     }
   }
 
-  /**
-   * Parse OCR text to extract rate table data.
-   * Looks for common patterns: airport codes, numbers.
-   */
   function _parseOcrText(text) {
     const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
     const AIRPORTS = /([A-Z]{2,3})\s*[-→→]\s*([A-Z]{2,3})/i;
-    const AIRLINE  = /([A-Z]{2,6})(?:\s|$)/i;
     const NUMBER   = /[\d,]+\.?\d*/;
-    const DECIMAL  = /(\d+\.?\d*)/;
     const TIER_PATTERNS = [
       /([\d,]+\.?\d*)\s*(?:min|minimum|最低)[\s:]*([\d,]+\.?\d*)?/i,
       /([\d,]+\.?\d*)\s*(?:-?45|≤?\s*45)[\s:]*([\d,]+\.?\d*)?/i,
@@ -1129,13 +1149,11 @@ const AdminApp = (() => {
     let origin = '', destination = '', carrier = '', agent = '';
     const tiers = { min: null, neg45: null, pos45: null, pos100: null, pos300: null, pos500: null, pos1000: null };
 
-    // Try to find route
     for (const line of lines) {
       const m = line.match(AIRPORTS);
       if (m && !origin) { origin = m[1]; destination = m[2]; }
     }
 
-    // Try to find carrier
     for (const line of lines) {
       const words = line.split(/\s+/);
       for (const word of words) {
@@ -1146,14 +1164,10 @@ const AdminApp = (() => {
       if (carrier) break;
     }
 
-    // Try to find tier prices from structured tables
     const numPattern = /(\d+\.?\d*)/g;
-    // Find lines that look like a table row with multiple numbers
     for (const line of lines) {
       const nums = [...line.matchAll(numPattern)].map(m => parseFloat(m[1]));
-      // If line has 5-8 numbers, it's likely a pricing row
       if (nums.length >= 5 && nums.length <= 8) {
-        // Map to tiers
         if (!tiers.min)    tiers.min    = nums[0];
         if (!tiers.neg45)  tiers.neg45  = nums[1];
         if (!tiers.pos45)  tiers.pos45  = nums[2];
@@ -1187,6 +1201,7 @@ const AdminApp = (() => {
 
   async function _confirmAiScan() {
     const f = id => document.getElementById(id)?.value?.trim();
+    const operator = Auth.getUsername();
     const tiers = {
       min:    _n(parseFloat(f('aiRateMin'))),
       neg45:  _n(parseFloat(f('aiRateNeg45'))),
@@ -1201,7 +1216,6 @@ const AdminApp = (() => {
 
     _closeAiScanModal();
 
-    // Populate the rate form and open it
     const rateObj = {
       id:           Utils.uuid(),
       type:         'air',
@@ -1224,7 +1238,7 @@ const AdminApp = (() => {
       validTo:      f('aiValidTo')   || null,
       remark:       f('aiRemark')    || 'Imported from AI scan',
       updatedAt:    new Date().toISOString(),
-      rate:         tiers.neg45 ? parseFloat(tiers.neg45) : (tiers.min ? parseFloat(tiers.min) : 0),
+      operator:     operator,
     };
 
     _rates.push(rateObj);

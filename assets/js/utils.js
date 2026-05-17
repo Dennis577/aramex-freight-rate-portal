@@ -113,6 +113,26 @@ const Utils = (() => {
   /**
    * Build Excel template rows for rate import
    * Returns array of objects matching the import column spec
+   *
+   * Column spec (2026-05-17):
+   *   type        | air / ocean | 必填，默认 air
+   *   origin      | 3-letter IATA code | 必填，如 SHA
+   *   destination | 3-letter IATA code | 必填，如 LAX
+   *   carrier     | 承运人代码         | 选填，如 CX
+   *   commodity   | 货物类型           | 选填，如 General Cargo
+   *   currency    | CNY/USD/EUR/HKD   | 选填，默认 CNY
+   *   unit        | teu/cbm/kg/shipment | 仅 ocean 选填，默认 teu
+   *   rate_min    | 最低收费（CNY）    | 仅 air，选填
+   *   rate_neg45  | ≤45kg 单价（CNY） | 仅 air，选填（至少填一个 tier）
+   *   rate_pos45  | >45kg 单价（CNY） | 仅 air，选填
+   *   rate_pos100 | >100kg 单价（CNY）| 仅 air，选填
+   *   rate_pos300 | >300kg 单价（CNY）| 仅 air，选填
+   *   rate_pos500 | >500kg 单价（CNY）| 仅 air，选填
+   *   rate_pos1000| >1000kg 单价（CNY）| 仅 air，选填
+   *   mincharge   | 最低收费           | 选填
+   *   validfrom   | YYYY-MM-DD        | 选填
+   *   validto     | YYYY-MM-DD        | 选填
+   *   remark      | 备注              | 选填
    */
   function getTemplateRows() {
     return [
@@ -124,7 +144,6 @@ const Utils = (() => {
         commodity: 'General Cargo',
         currency: 'CNY',
         unit: 'kg',
-        rate: 4.5,
         rate_min: 120,
         rate_neg45: 4.5,
         rate_pos45: 3.8,
@@ -132,10 +151,9 @@ const Utils = (() => {
         rate_pos300: 2.8,
         rate_pos500: 2.5,
         rate_pos1000: 2.2,
-        minCharge: 120,
-        density_ratio: '1:500',
-        validFrom: '2026-06-01',
-        validTo: '2026-06-30',
+        mincharge: 120,
+        validfrom: '2026-06-01',
+        validto: '2026-06-30',
         remark: 'Sample air rate'
       },
       {
@@ -146,7 +164,6 @@ const Utils = (() => {
         commodity: 'FCL',
         currency: 'USD',
         unit: 'teu',
-        rate: 1200,
         rate_min: '',
         rate_neg45: '',
         rate_pos45: '',
@@ -154,10 +171,9 @@ const Utils = (() => {
         rate_pos300: '',
         rate_pos500: '',
         rate_pos1000: '',
-        minCharge: '',
-        density_ratio: '',
-        validFrom: '2026-06-01',
-        validTo: '2026-06-30',
+        mincharge: 1200,
+        validfrom: '2026-06-01',
+        validto: '2026-06-30',
         remark: 'Sample ocean rate'
       }
     ];
