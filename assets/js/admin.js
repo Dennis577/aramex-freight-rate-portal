@@ -131,7 +131,7 @@ const AdminApp = (() => {
 
     if (!slice.length) {
       tbody.innerHTML = `
-        <tr><td colspan="16" style="text-align:center;padding:32px;color:var(--color-text-muted)">
+        <tr><td colspan="17" style="text-align:center;padding:32px;color:var(--color-text-muted)">
           No rates found
         </td></tr>`;
     } else {
@@ -185,6 +185,7 @@ const AdminApp = (() => {
         <td>${Utils.esc(r.carrier || '—')}</td>
         <td>${Utils.esc(r.commodity || 'General')}</td>
         <td>${agentDisplay}</td>
+        <td>${Utils.esc(r.operator || '—')}</td>
         ${isAir ? tierKeys.map(k => `<td class="td-tier-cell">${_fmtTierCell(r, k)}</td>`).join('') : '<td>—</td>'.repeat(7)}
         <td style="color:${expired ? 'var(--color-expired-text)' : 'inherit'};font-weight:${expired?'700':'400'}">
           ${Utils.fmtDate(r.validTo)}
