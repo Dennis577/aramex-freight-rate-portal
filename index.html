@@ -168,6 +168,22 @@
 
   <!-- Scripts (order matters) -->
   <script src="assets/js/config.js"></script>
+  <!-- Guard: if config loaded with empty keys (stale cache), force hard reload -->
+  <script>
+    (function() {
+      if (typeof CONFIG === 'undefined' || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+        // Clear caches and hard reload
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(n) { caches.delete(n); });
+          });
+        }
+        // Bust the URL to force fresh load
+        var url = location.href.split('?')[0] + '?_r=' + Date.now();
+        location.replace(url);
+      }
+    })();
+  </script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/query.js"></script>
