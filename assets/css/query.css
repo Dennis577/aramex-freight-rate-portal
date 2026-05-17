@@ -1,5 +1,5 @@
 /* ============================================================
-   FREIGHT RATE PORTAL — Query Page Styles (index.html)
+   FREIGHT RATE PORTAL — Query Page Styles (index.html) v2
    ============================================================ */
 
 /* --- Page Layout --- */
@@ -9,18 +9,29 @@
   min-height: 100vh;
 }
 
-/* --- Search Panel --- */
+/* --- Search Panel — Premium --- */
 .search-panel {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   padding: var(--space-6);
+  position: relative;
+}
+
+.search-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--color-border), transparent);
 }
 
 .search-panel .panel-title {
   font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--color-text-muted);
   margin-bottom: var(--space-4);
 }
@@ -68,7 +79,7 @@
   font-family: var(--font-primary);
   font-weight: 600;
   border-radius: var(--radius);
-  transition: all .15s ease;
+  transition: all var(--transition-fast);
 }
 
 .search-date-row .btn-clear:hover {
@@ -76,7 +87,7 @@
   border-color: var(--color-text-muted);
 }
 
-/* --- Results Section --- */
+/* --- Results Section — Premium --- */
 .results-section {
   flex: 1;
   padding: var(--space-6) 0 var(--space-10);
@@ -106,21 +117,38 @@
   font-weight: 700;
 }
 
-/* --- Rate Card (mobile layout) --- */
+/* --- Rate Card (mobile layout) — Premium --- */
 .rate-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-4);
   box-shadow: var(--shadow-sm);
-  transition: all .2s ease;
+  transition: all var(--transition-base);
   overflow: hidden;
+  position: relative;
+}
+
+.rate-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--color-primary), var(--color-primary-light));
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.rate-card:hover::before {
+  opacity: 1;
 }
 
 .rate-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-  border-color: var(--color-border-dark);
+  border-color: var(--color-border-hover);
 }
 
 .rate-card.expired {
@@ -142,12 +170,13 @@
   gap: var(--space-3);
   font-size: var(--font-size-lg);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .rate-route .arrow {
   color: var(--color-text-muted);
   font-weight: 400;
+  font-size: var(--font-size-md);
 }
 
 .rate-card-body {
@@ -173,7 +202,7 @@
   font-size: var(--font-size-xs);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--color-text-muted);
 }
 
@@ -210,7 +239,7 @@
   font-weight: 700;
 }
 
-/* --- Table view (larger screens) --- */
+/* --- Table view (larger screens) — Premium --- */
 @media (min-width: 900px) {
   .rate-table {
     width: 100%;
@@ -230,33 +259,63 @@
 
   .rate-table th {
     color: var(--color-text-secondary);
-    padding: 14px var(--space-4);
+    padding: 16px var(--space-4);
     text-align: left;
     font-size: var(--font-size-xs);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     border-bottom: 2px solid var(--color-border);
     white-space: nowrap;
+    background: transparent;
+  }
+
+  .rate-table th:first-child {
+    padding-left: var(--space-5);
+  }
+
+  .rate-table th:last-child {
+    padding-right: var(--space-5);
   }
 
   .rate-table td {
-    padding: 14px var(--space-4);
+    padding: 16px var(--space-4);
     border-bottom: 1px solid var(--color-border-light);
     vertical-align: middle;
     color: var(--color-text-primary);
+    transition: background var(--transition-fast);
+  }
+
+  .rate-table td:first-child {
+    padding-left: var(--space-5);
+  }
+
+  .rate-table td:last-child {
+    padding-right: var(--space-5);
   }
 
   .rate-table tbody tr {
-    transition: background .15s ease;
+    transition: all var(--transition-fast);
   }
 
   .rate-table tbody tr:hover {
-    background: #fff8f8;
+    background: #FEF2F2;
+  }
+
+  .rate-table tbody tr:hover td {
+    border-bottom-color: var(--color-border);
   }
 
   .rate-table tbody tr:last-child td {
     border-bottom: none;
+  }
+
+  .rate-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--radius-lg);
+  }
+
+  .rate-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--radius-lg);
   }
 
   .rate-table tr.expired td {
@@ -289,7 +348,7 @@
   .table-wrap  { display: block; }
 }
 
-/* --- No results / disclaimer --- */
+/* --- No results / disclaimer — Premium --- */
 .disclaimer {
   margin-top: var(--space-8);
   padding: var(--space-4) var(--space-5);
@@ -299,16 +358,18 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.7;
+  box-shadow: var(--shadow-sm);
 }
 
-/* --- Last updated chip --- */
+/* --- Last updated chip — Premium --- */
 .last-updated {
   font-size: var(--font-size-xs);
-  color: rgba(255,255,255,.65);
+  color: rgba(255,255,255,.6);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 /* ── Price tiers (v2 — 2026-05) ─────────────────────────────── */
@@ -343,22 +404,22 @@
 
 /* Density tags */
 .density-tag {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #ECFDF5;
+  color: #047857;
   font-size: 11px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 2px 8px;
+  border-radius: 100px;
   white-space: nowrap;
 }
 
 .density-tag-sm {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #ECFDF5;
+  color: #047857;
   font-size: 11px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 8px;
+  padding: 1px 6px;
+  border-radius: 100px;
   white-space: nowrap;
 }
 
@@ -403,6 +464,7 @@
   font-weight: 700;
   font-size: var(--font-size-sm);
   white-space: nowrap;
+  text-align: center;
 }
 
 /* Table: density column */
